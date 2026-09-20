@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clash Royale PS</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23f2c94c' stroke='%23b98a1f' stroke-width='3' stroke-linejoin='round' d='M6 46L3 18l19 13L32 10l10 21 19-13-3 28z'/%3E%3Cpath fill='%23f2c94c' stroke='%23b98a1f' stroke-width='3' stroke-linejoin='round' d='M6 43h52v5H6z'/%3E%3Ccircle fill='%23e53935' cx='32' cy='10' r='4'/%3E%3C/svg%3E">
+</head>
+<body>
+<header>
+  <div class="logo" title="Clash Royale Private Server">
+    <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
+      <path fill="#f2c94c" stroke="#b98a1f" stroke-width="3" stroke-linejoin="round" d="M6 46L3 18l19 13L32 10l10 21 19-13-3 28z"/>
+      <path fill="#f2c94c" stroke="#b98a1f" stroke-width="3" stroke-linejoin="round" d="M6 43h52v5H6z"/>
+      <circle fill="#e53935" cx="32" cy="10" r="4"/>
+    </svg>
+  </div>
+  <div class="head-title">Clash Royale Private Server</div>
+  <div class="head-status" id="head-status">…</div>
+</header>
+
+<nav id="tabs">
+  <button class="tab active" data-tab="server">Server</button>
+  <button class="tab" data-tab="cards">CSV</button>
+  <button class="tab" data-tab="db">Database</button>
+  <button class="tab" data-tab="players">Players</button>
+  <button class="tab" data-tab="apk">APK Builder</button>
+  <button class="tab" data-tab="logs">Logs</button>
+  <button class="tab" data-tab="config">Config</button>
+</nav>
+
+<main>
+
+  <!-- ============ SERVER ============ -->
+  <section id="tab-server" class="panel active">
+    <div class="card server-card">
+      <h2>Server</h2>
+      <div class="serv-pills">
+        <span class="pill" id="pill-db"><i class="dot"></i>Database</span>
+        <span class="pill" id="pill-main"><i class="dot"></i>Main server</span>
+        <span class="pill" id="pill-battles"><i class="dot"></i>Battle server</span>
+      </div>
+      <button id="btn-stack" class="big-btn">Start server</button>
+      <div id="stack-hint" class="muted">Starting the server brings up the database, the main server and the battle server together. Follow the progress in the Logs tab.</div>
+    </div>
+    <div class="card">
+      <h2>Connect</h2>
+      <div class="connect-row">
+        <input id="conn-address" class="conn-input" type="text" placeholder="server address — e.g. 100.x.y.z or my.host.com" maxlength="23">
+        <span class="conn">:9339</span>
+        <button id="btn-local-ip" class="btn">Use local IP</button>
+      </div>
+      <div class="muted" id="conn-hint">This address is baked into the client APK the next time you build one (APK Builder → Build patched APK).</div>
+      <div class="muted" id="install-note"></div>
+    </div>
+  </section>
+
+  <!-- ============ CSV ============ -->
+  <section id="tab-cards" class="panel">
+    <div class="card">
+      <div class="toolbar">
+        <h2>CSV files</h2>
+        <select id="cfiles"></select>
+        <button id="btn-load" class="btn">Load</button>
+        <span class="spacer"></span>
+        <input id="cfilter" type="search" placeholder="filter…">
+        <button id="btn-save" class="btn">Save changes</button>
+        <button id="btn-restore" class="btn danger">Restore pristine data</button>
+      </div>
+      <div class="muted" id="csv-meta"></div>
+      <div class="table-wrap"><table id="cvtable"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ DATABASE ============ -->
+  <section id="tab-db" class="panel">
+    <div class="db-grid">
+      <div class="card">
+        <div class="toolbar">
+          <h2>Tables</h2>
+          <span class="spacer"></span>
+          <input id="dbfilter" type="search" placeholder="filter…">
+          <button id="db-refresh" class="btn">Refresh</button>
+        </div>
+        <div class="table-wrap db-tables">
+          <table id="dbtable"><thead><tr><th>Table</th><th>Rows</th><th>Size</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <h2>Table data</h2>
+          <span class="muted" id="dbmeta"></span>
+          <span class="spacer"></span>
+          <span class="muted" id="dbpage"></span>
+          <button id="db-prev" class="btn">‹</button>
+          <button id="db-next" class="btn">›</button>
+          <select id="db-limit">
+            <option value="50">50 rows</option>
+            <option value="100" selected>100 rows</option>
+            <option value="500">500 rows</option>
+          </select>
+        </div>
+        <div class="table-wrap db-view">
+          <table id="dbview">
+            <thead></thead>
+            <tbody>
+              <tr><td class="muted" colspan="20">Select a table on the left.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="muted" id="db-hint"></div>
+        <div class="frow db-actions">
+          <label class="check"><input id="db-check-write" type="checkbox"> confirm writes</label>
+          <span class="muted">Edit a cell, then use <b>Save row</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <h2>SQL console</h2>
+        <span class="spacer"></span>
+        <button id="sql-run" class="btn">Run</button>
+      </div>
+      <textarea id="sql-input" class="sql-edit" placeholder="SELECT * FROM players LIMIT 50&#10;-- reads and writes both work; row limit 1000"></textarea>
+      <div class="muted" id="sql-meta"></div>
+      <div class="table-wrap db-view"><table id="sqlres"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ PLAYERS ============ -->
+  <section id="tab-players" class="panel">
+    <div class="db-grid">
+      <div class="card">
+        <div class="toolbar">
+          <h2>Players</h2>
+          <span class="spacer"></span>
+          <input id="plfilter" type="search" placeholder="filter…">
+          <button id="pl-refresh" class="btn">Refresh</button>
+        </div>
+        <div class="table-wrap db-tables">
+          <table id="pltable"><thead><tr><th>ID</th><th>Name</th><th>Level</th><th>Trophies</th><th>Gold</th><th>Gems</th><th>Sessions</th><th>Admin</th><th>Banned</th></tr></thead><tbody><tr><td colspan="9" class="muted">Start the server stack to load players.</td></tr></tbody></table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar"><h2>Player editor</h2><span class="spacer"></span><span class="muted" id="pledit-id"></span></div>
+        <div id="pledit"><p class="muted">Select a player on the left.</p>
+          <div class="muted">Edits the player's data directly. Changes apply when the player logs in / is offline; admin and ban take effect after restarting the main server (or on next login if the stack is stopped).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ APK BUILDER ============ -->
+  <section id="tab-apk" class="panel">
+    <div class="card">
+      <h2>Rebuild your APK</h2>
+      <div class="frow">
+        <label for="apk-address">Server address baked into the client</label>
+        <input id="apk-address" type="text" readonly placeholder="set on the Server tab → Connect" maxlength="23">
+        <span class="muted">Display only — edit it on the Server tab (Connect). The build uses that address as-is, no port.</span>
+      </div>
+      <div class="frow">
+        <label class="check"><input id="apk-patch-battles" type="checkbox" checked> Patch battle server links</label>
+        <label class="check"><input id="apk-patch-address" type="checkbox" checked> Patch server address</label>
+        <label class="check"><input id="apk-bake-csv" type="checkbox" checked> Bake the edited card/CSV files into the client</label>
+      </div>
+      <div class="frow">
+        <span class="muted">Baking replaces the CSV data inside the APK with the files you have edited in the CSV tab. Untick to ship the client's original data — the app then uses your server-side edits only where the server itself decides.</span>
+      </div>
+      <div class="frow">
+        <button id="btn-build" class="btn">Build patched APK</button>
+        <button id="btn-orig" class="btn">Build original client</button>
+        <button id="btn-revert" class="btn">Revert server to default</button>
+        <span class="muted">Revert restores the pristine game data files on the server.</span>
+      </div>
+      <div class="frow">
+        <span class="muted">Client ABIs: <span id="apk-abis">…</span></span>
+      </div>
+      <div class="warn-banner" id="apk-abis-warn" style="display:none">
+        <b>32-bit only — will not install on Android 16+ (64-bit-only) phones.</b>
+        This build ships only 32-bit native libraries. Use an older 32-bit-capable
+        device, or supply an arm64 (<code>arm64-v8a</code>) build of the client.
+      </div>
+      <div class="frow" id="apk-output"></div>
+    </div>
+    <div class="card">
+      <h2>Build log</h2>
+      <pre class="log" id="apk-log"></pre>
+    </div>
+  </section>
+
+  <!-- ============ LOGS ============ -->
+  <section id="tab-logs" class="panel">
+    <div class="card">
+      <div class="toolbar">
+        <h2>Live logs</h2>
+        <select id="logfilter">
+          <option value="all">All processes</option>
+          <option value="activity">Player activity</option>
+          <option value="db">Database</option>
+          <option value="main">Main server</option>
+          <option value="battles">Battle server</option>
+          <option value="apk">APK builder</option>
+          <option value="app">Panel</option>
+        </select>
+      </div>
+      <div class="log" id="logbox"></div>
+    </div>
+  </section>
+
+<!-- ============ CONFIG ============ -->
+  <section id="tab-config" class="panel">
+    <div class="card">
+      <div class="toolbar">
+        <h2>Game rules</h2>
+        <span class="spacer"></span>
+        <button id="cfg-load" class="btn">Reload</button>
+        <button id="cfg-save" class="btn">Save</button>
+      </div>
+      <div class="frow"><label for="cfg-MinTrophies">Min trophies per battle</label><input id="cfg-MinTrophies" type="number">
+        <span class="muted">Same for both players in a battle. Default 0 = battles never award trophies.</span></div>
+      <div class="frow"><label for="cfg-MaxTrophies">Max trophies per battle</label><input id="cfg-MaxTrophies" type="number">
+        <span class="muted">Wins grant a random value in [Min, Max]. Default 0 = wins change nothing.</span></div>
+      <div class="frow"><label for="cfg-DefaultGold">Default gold (new players)</label><input id="cfg-DefaultGold" type="number"></div>
+      <div class="frow"><label for="cfg-DefaultGems">Default gems (new players)</label><input id="cfg-DefaultGems" type="number"></div>
+      <div class="frow"><label for="cfg-DefaultLevel">Default tower level (new players)</label><input id="cfg-DefaultLevel" type="number"></div>
+      <div class="frow"><label for="cfg-GemsToGiveAfterMatch">Gems after each match</label><input id="cfg-GemsToGiveAfterMatch" type="number"></div>
+      <div class="frow"><label for="cfg-GoldToGiveAfterMatch">Gold after each match</label><input id="cfg-GoldToGiveAfterMatch" type="number"></div>
+      <div class="muted" id="cfg-meta"></div>
+      <div class="frow"><span class="muted">Changes are written to the main server's <code>config.json</code>. Restart the server stack for them to take effect.</span></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
