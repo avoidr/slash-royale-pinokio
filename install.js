@@ -19,7 +19,15 @@ module.exports = {
       }
     },
 
-    // 3. Install the .NET 8 SDK into env/dotnet. Windows uses the PowerShell
+    // 3. Apply source patches (config defaults, console fixes, etc.)
+    {
+      method: "shell.run",
+      params: {
+        message: "{{which('node')}} scripts/patch-source.js"
+      }
+    },
+
+    // 4. Install the .NET 8 SDK into env/dotnet. Windows uses the PowerShell
     //    installer (dotnet-install.sh no longer ships Windows support), all
     //    other platforms use the shell script.
     {

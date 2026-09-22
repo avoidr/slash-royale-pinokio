@@ -19,6 +19,14 @@ module.exports = {
       }
     },
 
+    // Re-apply source patches
+    {
+      method: "shell.run",
+      params: {
+        message: "{{which('node')}} scripts/patch-source.js"
+      }
+    },
+
     // Re-publish both servers
     {
       method: "shell.run",
