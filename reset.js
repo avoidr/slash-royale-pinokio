@@ -3,9 +3,12 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        shell: "{{which('bash')}}",
         message: [
-          "rm -rf env app/node_modules app/data server/publish server/publish-battles"
+          "rmdir /s /q env 2>nul || true",
+          "rmdir /s /q app\\node_modules 2>nul || true",
+          "rmdir /s /q app\\data 2>nul || true",
+          "rmdir /s /q server\\publish 2>nul || true",
+          "rmdir /s /q server\\publish-battles 2>nul || true"
         ]
       }
     }
