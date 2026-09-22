@@ -90,7 +90,7 @@ module.exports = {
         message: [
           "rm -rf env/mariadb-tmp && mkdir -p env/mariadb-tmp env/mariadb",
           "{{platform === 'win32' ? 'unzip -q env/mariadb-archive.zip -d env/mariadb-tmp' : 'tar -xf env/mariadb-archive.tar.gz -C env/mariadb-tmp'}}",
-          "cp -r env/mariadb-tmp/*/* env/mariadb/",
+          "{{platform === 'win32' ? 'cp -r env/mariadb-tmp/mariadb-10.11.19-winx64/* env/mariadb/ 2>nul || cp -r env/mariadb-tmp/*/* env/mariadb/' : 'cp -r env/mariadb-tmp/*/* env/mariadb/'}}",
           "rm -rf env/mariadb-tmp env/mariadb-archive.{{platform === 'win32' ? 'zip' : 'tar.gz'}}"
         ],
         when: "{{platform !== 'darwin' && !exists('env/mariadb/bin/mariadbd' + (platform === 'win32' ? '.exe' : ''))}}"
