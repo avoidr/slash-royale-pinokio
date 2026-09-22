@@ -1,33 +1,6 @@
 module.exports = {
   run: [
-    // 1. Clone HashRoyale server source (if not already cloned)
-    {
-      method: "shell.run",
-      params: {
-        message: "git clone https://github.com/Hashmane/HashRoyale.git HashRoyale",
-        path: "server",
-        when: "{{!exists('server/HashRoyale')}}"
-      }
-    },
-
-    // 2. Retarget the battles project from netcoreapp3.1 to net8.0 (the main project is already net8.0)
-    {
-      method: "shell.run",
-      params: {
-        message: "{{which('node')}} scripts/retarget-battles.js",
-        when: "{{!exists('server/publish-battles/ClashRoyale.Battles.dll')}}"
-      }
-    },
-
-    // 3. Apply source patches (config defaults, console fixes, etc.)
-    {
-      method: "shell.run",
-      params: {
-        message: "{{which('node')}} scripts/patch-source.js"
-      }
-    },
-
-    // 4. Install the .NET 8 SDK into env/dotnet. Windows uses the PowerShell
+    // 1. Install the .NET 8 SDK into env/dotnet. Windows uses the PowerShell
     //    installer (dotnet-install.sh no longer ships Windows support), all
     //    other platforms use the shell script.
     {
@@ -44,7 +17,16 @@ module.exports = {
       }
     },
 
-    // 4. Publish both servers (main + battles) with the .NET SDK
+    // 2. Retarget the battles project from netcoreapp3.1 to net8.0 (the main project is already net8.0)
+    {
+      method: "shell.run",
+      params: {
+        message: "{{which('node')}} scripts/retarget-battles.js",
+        when: "{{!exists('server/publish-battles/ClashRoyale.Battles.dll')}}"
+      }
+    },
+
+    // 3. Publish both servers (main + battles) with the .NET SDK
     {
       method: "shell.run",
       params: {

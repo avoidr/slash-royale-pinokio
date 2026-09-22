@@ -1,29 +1,11 @@
 module.exports = {
   run: [
-    // Pull latest server source (server/HashRoyale)
-    {
-      method: "shell.run",
-      params: {
-        message: "git pull",
-        path: "server/HashRoyale",
-        when: "{{exists('server/HashRoyale')}}"
-      }
-    },
-
     // Re-apply the battles retarget patch (upstream may have re-introduced netcoreapp3.1)
     {
       method: "shell.run",
       params: {
         message: "{{which('node')}} scripts/retarget-battles.js",
         when: "{{exists('server/HashRoyale/src/ClashRoyale.Battles/ClashRoyale.Battles.csproj')}}"
-      }
-    },
-
-    // Re-apply source patches
-    {
-      method: "shell.run",
-      params: {
-        message: "{{which('node')}} scripts/patch-source.js"
       }
     },
 
