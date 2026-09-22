@@ -5,7 +5,7 @@ module.exports = {
   title: "Clash Royale Private Server",
   description: "Self-hosted Clash Royale private server (HashRoyale) with web admin panel and APK builder",
   menu: async (kernel, info) => {
-    let installed = info.exists("env")
+    let installed = info.exists("env") && info.exists("app/node_modules")
     let installing = info.running("install.js")
     let running = info.running("start.js")
     let updating = info.running("update.js")
