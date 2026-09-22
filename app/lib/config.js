@@ -18,6 +18,7 @@ const MAIN_DEFAULTS = {
   patch_url: "",
   sentry_api: "",
   server_port: 9339,
+  server_address: "",
   update_url: "",
   use_content_patch: false,
   MinTrophies: 0,
@@ -57,6 +58,7 @@ function buildMain() {
     mysql_user: s.db.user,
     mysql_password: s.db.password,
     mysql_database: s.db.database,
+    server_address: s.serverAddress,
   };
   const prev = readJson(mainFile(), {});
   for (const [k, v] of Object.entries(prev)) {
