@@ -17,6 +17,14 @@ module.exports = {
       }
     },
 
+    // 1b. Verify .NET SDK is fully installed before proceeding
+    {
+      method: "shell.run",
+      params: {
+        message: "{{which('node')}} -e \"const fs=require('fs');const path=require('path');const dotnet=path.join(process.cwd(),'env','dotnet','dotnet'+(process.platform==='win32'?'.exe':''));const sdk=path.join(process.cwd(),'env','dotnet','sdk');if(!fs.existsSync(dotnet))process.exit(1);const sdks=fs.readdirSync(sdk).filter(f=>!f.startsWith('.')).filter(f=>fs.statSync(path.join(sdk,f)).isDirectory());if(sdks.length===0){console.error('No SDK found in '+sdk);process.exit(1);}console.log('SDK found:',sdks.join(', '));\""
+      }
+    },
+
     // 2. Retarget the battles project from netcoreapp3.1 to net8.0 (the main project is already net8.0)
     {
       method: "shell.run",

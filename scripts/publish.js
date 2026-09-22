@@ -17,6 +17,12 @@ if (!fs.existsSync(dotnet)) {
   process.exit(2);
 }
 
+const sdkDir = path.join(path.dirname(dotnet), "sdk");
+if (!fs.existsSync(sdkDir) || fs.readdirSync(sdkDir).filter(f => !f.startsWith('.')).filter(f => fs.statSync(path.join(sdkDir, f)).isDirectory()).length === 0) {
+  console.error(".NET SDK not found in " + sdkDir + " (run Install first)");
+  process.exit(2);
+}
+
 const targets = [
   {
     name: "ClashRoyale (main server)",
