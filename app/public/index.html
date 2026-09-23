@@ -26,7 +26,6 @@
   <button class="tab" data-tab="db">Database</button>
   <button class="tab" data-tab="players">Players</button>
   <button class="tab" data-tab="apk">APK Builder</button>
-  <button class="tab" data-tab="logs">Logs</button>
   <button class="tab" data-tab="config">Config</button>
 </nav>
 
@@ -41,18 +40,17 @@
         <span class="pill" id="pill-main"><i class="dot"></i>Main server</span>
         <span class="pill" id="pill-battles"><i class="dot"></i>Battle server</span>
       </div>
-      <button id="btn-stack" class="big-btn">Start server</button>
-      <div id="stack-hint" class="muted">Starting the server brings up the database, the main server and the battle server together. Follow the progress in the Logs tab.</div>
+      <div class="serv-btns">
+        <button id="btn-stack" class="big-btn">Start server</button>
+        <button id="btn-restart" class="big-btn" disabled>Restart server</button>
+      </div>
+      <div id="stack-hint" class="muted">Starting the server brings up the database, the main server and the battle server together. Restart is only available while the stack is up.</div>
     </div>
     <div class="card">
-      <h2>Connect</h2>
-      <div class="connect-row">
-        <input id="conn-address" class="conn-input" type="text" placeholder="server address — e.g. 100.x.y.z or my.host.com" maxlength="23">
-        <span class="conn">:9339</span>
-        <button id="btn-local-ip" class="btn">Use local IP</button>
+      <div class="toolbar">
+        <h2>Live logs</h2>
       </div>
-      <div class="muted" id="conn-hint">This address is baked into the client APK the next time you build one (APK Builder → Build patched APK).</div>
-      <div class="muted" id="install-note"></div>
+      <div class="log" id="logbox"></div>
     </div>
   </section>
 
@@ -154,33 +152,25 @@
   <!-- ============ APK BUILDER ============ -->
   <section id="tab-apk" class="panel">
     <div class="card">
-      <h2>Rebuild your APK</h2>
+      <h2>Build patched APK</h2>
       <div class="frow">
         <label for="apk-address">Server address baked into the client</label>
-        <input id="apk-address" type="text" readonly placeholder="set on the Server tab → Connect" maxlength="23">
-        <span class="muted">Display only — edit it on the Server tab (Connect). The build uses that address as-is, no port.</span>
+        <input id="apk-address" type="text" readonly placeholder="set on the Config tab → Connect" maxlength="23">
+        <span class="muted">Display only — edit it on the Config tab (Connect). The build uses that address as-is, no port.</span>
       </div>
-      <div class="frow">
-        <label class="check"><input id="apk-patch-battles" type="checkbox" checked> Patch battle server links</label>
-        <label class="check"><input id="apk-patch-address" type="checkbox" checked> Patch server address</label>
-        <label class="check"><input id="apk-bake-csv" type="checkbox" checked> Bake the edited card/CSV files into the client</label>
-      </div>
-      <div class="frow">
-        <span class="muted">Baking replaces the CSV data inside the APK with the files you have edited in the CSV tab. Untick to ship the client's original data — the app then uses your server-side edits only where the server itself decides.</span>
+      <div class="frow apk-summary">
+        <span class="muted">The patcher always:</span>
+        <ul>
+          <li>Patches the battle server links to point at your server</li>
+          <li>Patches the server address baked into the client</li>
+          <li>Bakes the card/CSV files edited in the CSV tab into the client</li>
+        </ul>
       </div>
       <div class="frow">
         <button id="btn-build" class="btn">Build patched APK</button>
-        <button id="btn-orig" class="btn">Build original client</button>
-        <button id="btn-revert" class="btn">Revert server to default</button>
-        <span class="muted">Revert restores the pristine game data files on the server.</span>
       </div>
       <div class="frow">
-        <span class="muted">Client ABIs: <span id="apk-abis">…</span></span>
-      </div>
-      <div class="warn-banner" id="apk-abis-warn" style="display:none">
-        <b>32-bit only — will not install on Android 16+ (64-bit-only) phones.</b>
-        This build ships only 32-bit native libraries. Use an older 32-bit-capable
-        device, or supply an arm64 (<code>arm64-v8a</code>) build of the client.
+        <span class="muted">Client ABIs: <span id="apk-abis">…</span> (32-bit devices supported only)</span>
       </div>
       <div class="frow" id="apk-output"></div>
     </div>
@@ -190,27 +180,18 @@
     </div>
   </section>
 
-  <!-- ============ LOGS ============ -->
-  <section id="tab-logs" class="panel">
-    <div class="card">
-      <div class="toolbar">
-        <h2>Live logs</h2>
-        <select id="logfilter">
-          <option value="all">All processes</option>
-          <option value="activity">Player activity</option>
-          <option value="db">Database</option>
-          <option value="main">Main server</option>
-          <option value="battles">Battle server</option>
-          <option value="apk">APK builder</option>
-          <option value="app">Panel</option>
-        </select>
-      </div>
-      <div class="log" id="logbox"></div>
-    </div>
-  </section>
-
-<!-- ============ CONFIG ============ -->
+  <!-- ============ CONFIG ============ -->
   <section id="tab-config" class="panel">
+    <div class="card">
+      <h2>Connect</h2>
+      <div class="connect-row">
+        <input id="conn-address" class="conn-input" type="text" placeholder="server address — e.g. 100.x.y.z or my.host.com" maxlength="23">
+        <span class="conn">:9339</span>
+        <button id="btn-local-ip" class="btn">Use local IP</button>
+      </div>
+      <div class="muted" id="conn-hint">This address is baked into the client APK the next time you build one (APK Builder → Build patched APK).</div>
+      <div class="muted" id="install-note"></div>
+    </div>
     <div class="card">
       <div class="toolbar">
         <h2>Game rules</h2>

@@ -90,6 +90,11 @@ main { padding: 20px 24px 60px; max-width: 1200px; margin: 0 auto; }
 .big-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 #stack-hint { margin-top: 12px; }
 
+/* server options and live log share the tab; buttons share a row */
+.serv-btns { display: flex; gap: 10px; }
+.serv-btns .big-btn { flex: 1; min-width: 0; padding: 13px; font-size: 15px; }
+@media (max-width: 560px) { .serv-btns { flex-direction: column; } }
+
 #toast {
   position: fixed; right: 18px; bottom: 18px; max-width: 360px;
   background: var(--bg2); border: 1px solid var(--gold2); color: var(--text);
@@ -140,6 +145,7 @@ td[contenteditable]:hover, td[contenteditable]:focus { outline: 1px dashed var(-
   display: block; padding: 12px; font-size: 13px;
   background: var(--bg); border: 1px dashed var(--gold2); border-radius: 8px; white-space: pre-wrap;
 }
+.apk-summary ul { margin: 4px 0 0; padding-left: 22px; color: var(--muted); font-size: 13px; }
 
 /* ---- database tab ---- */
 .db-grid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }

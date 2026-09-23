@@ -461,9 +461,9 @@ async function build(opts = {}) {
   const s = settings.get();
   const address = opts.address !== undefined ? opts.address : s.serverAddress || "";
   if (opts.address !== undefined) s.serverAddress = address;
-  const patchBattles = opts.patchBattles !== undefined ? opts.patchBattles : s.apk.patchBattles;
+  const patchBattles = opts.patchBattles !== undefined ? opts.patchBattles : true;
   const patchAddress = opts.patchAddress !== undefined ? opts.patchAddress : !!address;
-  const bakeGamefilesOn = opts.bakeGamefiles !== undefined ? !!opts.bakeGamefiles : s.apk.bakeGamefiles !== false;
+  const bakeGamefilesOn = opts.bakeGamefiles !== undefined ? !!opts.bakeGamefiles : true;
   const outputPath = opts.outputPath || path.join(p.apkDir, `clash-royale-${Date.now()}.apk`);
   const original = !!opts.original;
 

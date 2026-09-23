@@ -178,6 +178,31 @@ router.post("/stack/stop", wrap(async () => {
   }
 }));
 
+router.post("/stack/restart", wrap(async () => {
+  if (["starting", "stopping"].includes(stackState)) throw new Error("A stack operation is already in progress.");
+  stackState = "starting";
+  try {
+    logs.log("app", "=== Restarting server stack (stop all, then database -> main -> battles) ===");
+    await royale.stop("battles");
+    await royale.stop("main");
+    await db.stop();
+    activity.stop();
+    logs.log("app", "=== Bringing the stack back up ===");
+    await db.start();
+    await royale.start("main");
+    await royale.start("battles");
+    stackState = "running";
+    logs.log("app", "=== Server stack restarted ===");
+    activity.start();
+    return { ok: true, stack: stackState };
+  } catch (e) {
+    stackState = "error";
+    activity.stop();
+    logs.log("app", `Stack restart failed: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+}));
+
 router.get("/stack/status", wrap(async () => {
   const s = await royale.status();
   const d = await db.status();

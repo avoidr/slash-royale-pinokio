@@ -82,6 +82,9 @@ function renderStatus() {
   btn.textContent = anyUp ? "Stop server" : "Start server";
   btn.classList.toggle("danger", anyUp);
 
+  const rbtn = $("btn-restart");
+  rbtn.disabled = !anyUp;
+
   const conn = st.settings && st.settings.serverAddress;
   const addrInput = $("conn-address");
   if (document.activeElement !== addrInput) addrInput.value = conn || "";
@@ -130,10 +133,31 @@ $("btn-stack").addEventListener("click", async () => {
     const j = await postJSON("/api/stack/" + action, {}, 120000);
     if (j && j.ok === false) toast(j.error);
   } catch (e) {
-    toast(e.name === "AbortError" ? "The operation timed out; check the Logs tab." : e.message);
+    toast(e.name === "AbortError" ? "The operation timed out; check the log below." : e.message);
   } finally {
     stackBusy = false;
     btn.classList.remove("busy");
+    await refreshStatus();
+  }
+});
+
+let restartBusy = false;
+
+$("btn-restart").addEventListener("click", async () => {
+  const btn = $("btn-restart");
+  if (restartBusy) return;
+  restartBusy = true;
+  btn.classList.add("busy");
+  btn.textContent = "Restarting…";
+  try {
+    const j = await postJSON("/api/stack/restart", {}, 180000);
+    if (j && j.ok === false) toast(j.error);
+  } catch (e) {
+    toast(e.name === "AbortError" ? "The operation timed out; check the log below." : e.message);
+  } finally {
+    restartBusy = false;
+    btn.classList.remove("busy");
+    btn.textContent = "Restart server";
     await refreshStatus();
   }
 });
@@ -701,18 +725,8 @@ function showApkOutput(path, size, entries, signed) {
 async function loadApk() {
   const j = await getJSON("/api/apk/status");
   if (j.settings && j.settings.serverAddress) $("apk-address").value = j.settings.serverAddress;
-  $("apk-patch-address").checked = !(j.settings && j.settings.apk && j.settings.apk.patchAddress === false);
-  $("apk-patch-battles").checked = !(j.settings && j.settings.apk && j.settings.apk.patchBattles === false);
-  $("apk-bake-csv").checked = !(j.settings && j.settings.apk && j.settings.apk.bakeGamefiles === false);
-  if (j.abis && j.abis.length) {
-    $("apk-abis").textContent = j.abis.join(", ");
-    const has64 = j.abis.some((a) => a === "arm64-v8a" || a === "x86_64");
-    $("apk-abis-warn").style.display = has64 ? "none" : "block";
-  }
-  if (j.building) {
-    $("btn-build").disabled = true;
-    $("btn-orig").disabled = true;
-  }
+  if (j.abis && j.abis.length) $("apk-abis").textContent = j.abis.join(", ");
+  if (j.building) $("btn-build").disabled = true;
 }
 
 function setApkLog(line) {
@@ -723,14 +737,9 @@ function setApkLog(line) {
 
 $("btn-build").addEventListener("click", async () => {
   $("btn-build").disabled = true;
-  $("btn-orig").disabled = true;
   setApkLog("— build started —");
   try {
-    const j = await postJSON("/api/apk/build", {
-      patchAddress: $("apk-patch-address").checked,
-      patchBattles: $("apk-patch-battles").checked,
-      bakeGamefiles: $("apk-bake-csv").checked,
-    });
+    const j = await postJSON("/api/apk/build", {});
     showApkOutput(j.path, j.size, j.entries, j.signed);
     setApkLog(`Output: ${j.path}`);
     if (j.csv && j.csv.baked && j.csv.baked.length) setApkLog(`Baked ${j.csv.baked.length} edited game CSVs into the APK.`);
@@ -739,33 +748,6 @@ $("btn-build").addEventListener("click", async () => {
     setApkLog("error: " + e.message);
   }
   $("btn-build").disabled = false;
-  $("btn-orig").disabled = false;
-});
-
-$("btn-orig").addEventListener("click", async () => {
-  $("btn-build").disabled = true;
-  $("btn-orig").disabled = true;
-  setApkLog("— rebuilding original client —");
-  try {
-    const j = await postJSON("/api/apk/original", {});
-    showApkOutput(j.path, j.size, j.entries, j.signed);
-    setApkLog(`Output: ${j.path}`);
-    await loadApk();
-  } catch (e) {
-    setApkLog("error: " + e.message);
-  }
-  $("btn-build").disabled = false;
-  $("btn-orig").disabled = false;
-});
-
-$("btn-revert").addEventListener("click", async () => {
-  if (!confirm("Replace the patched server data with pristine defaults? This makes the card files identical to the original game.")) return;
-  try {
-    await postJSON("/api/gamefiles/restore");
-    alert("Server data reverted to default.");
-  } catch (e) {
-    alert(e.message);
-  }
 });
 
 /* ---------------- config tab ---------------- */
@@ -811,11 +793,9 @@ async function saveConfig() {
 $("cfg-load").addEventListener("click", loadConfig);
 $("cfg-save").addEventListener("click", saveConfig);
 
-/* ---------------- logs tab ---------------- */
+/* ---------------- logs ---------------- */
 const logCap = new Map();
-let logFilter = "all";
 const logSeen = new Map();
-let logTick = 0;
 
 function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -823,24 +803,18 @@ function esc(s) {
 
 function renderLogs() {
   const box = $("logbox");
-  const build = (src, entry) =>
-    `<div class="log-line${entry.err ? " err" : ""}">${
-      logFilter === "all" ? `<span class="log-src">${esc(src)}</span>` : ""
-    }<span class="log-ts">${esc(entry.ts)}</span> ${esc(entry.text)}</div>`;
-  const html = [];
-  if (logFilter === "all") {
-    for (const [src, arr] of logCap) for (const e of arr) html.push(build(src, e));
-  } else {
-    for (const e of logCap.get(logFilter) || []) html.push(build(logFilter, e));
-  }
-  box.innerHTML = html.join("\n");
+  const merged = [];
+  for (const [src, arr] of logCap) for (const e of arr) merged.push({ src, ...e });
+  merged.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  box.innerHTML = merged
+    .map(
+      (e) =>
+        `<div class="log-line${e.err ? " err" : ""}">` +
+        `<span class="log-src">${esc(e.src)}</span><span class="log-ts">${esc(e.ts)}</span> ${esc(e.text)}</div>`
+    )
+    .join("\n");
   box.scrollTop = box.scrollHeight;
 }
-
-$("logfilter").addEventListener("change", (e) => {
-  logFilter = e.target.value;
-  renderLogs();
-});
 
 function connectLogs() {
   const es = new EventSource("/api/logs/all/stream");
@@ -856,6 +830,7 @@ function connectLogs() {
     if (m.type !== "line") return;
     const src = m.source || "app";
     const entry = {
+      key: m.line && m.line.ts ? m.line.ts : "",
       ts: m.line && m.line.ts ? m.line.ts.slice(11, 19) : "",
       text: (m.line && m.line.text != null ? String(m.line.text) : "").trimEnd(),
       err: !!(m.line && m.line.stream === "err"),
