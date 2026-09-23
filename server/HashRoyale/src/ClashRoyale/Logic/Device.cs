@@ -84,23 +84,12 @@ namespace ClashRoyale.Logic
         }
 
         /// <summary>
-        ///     Disconnect a client by sending OutOfSyncMessage, or a custom
-        ///     ServerErrorMessage popup when a message is provided.
+        ///     Disconnect a client by sending OutOfSyncMessage
         /// </summary>
         /// <returns></returns>
-        public async void Disconnect(string message = null)
+        public async void Disconnect()
         {
-            if (message != null)
-            {
-                await new ServerErrorMessage(this)
-                {
-                    Message = message
-                }.SendAsync();
-            }
-            else
-            {
-                await new OutOfSyncMessage(this).SendAsync();
-            }
+            await new OutOfSyncMessage(this).SendAsync();
 
             try
             {
