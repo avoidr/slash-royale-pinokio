@@ -40,7 +40,7 @@ namespace ClashRoyale.Core
                             if (long.TryParse(name, out var id))
                             {
                                 Logger.Log($"Reloading player {id} (admin edit)...", typeof(ReloadPoller));
-                                await Resources.Players.ReloadPlayer(id);
+                                Resources.Players.ReloadPlayer(id);
                             }
 
                             try

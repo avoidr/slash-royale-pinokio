@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using ClashRoyale.Logic;
-using ClashRoyale.Protocol.Messages.Server;
 using SharpRaven.Data;
 
 namespace ClashRoyale.Database.Cache
@@ -138,7 +137,7 @@ public readonly object SyncObject = new object();
         /// <summary>
         ///     Force reload a player from database (admin edit)
         /// </summary>
-        public async Task ReloadPlayer(long userId)
+        public void ReloadPlayer(long userId)
         {
             Player player = null;
             lock (SyncObject)
@@ -158,11 +157,7 @@ public readonly object SyncObject = new object();
             // and disconnect them so they reload from the database on next login.
             if (player != null && player.Device != null)
             {
-                await new ServerErrorMessage(player.Device)
-                {
-                    Message = "Your account has been updated by an admin. Please reload to see changes."
-                }.SendAsync();
-                player.Device.Disconnect();
+                player.Device.Disconnect("Your account has been updated by an admin. Please reload to see changes.");
             }
         }
 
