@@ -809,7 +809,7 @@ function renderLogs() {
   box.innerHTML = merged
     .map(
       (e) =>
-        `<div class="log-line${e.err ? " err" : ""}">` +
+        `<div class="log-line${e.cls ? " " + e.cls : ""}">` +
         `<span class="log-src">${esc(e.src)}</span><span class="log-ts">${esc(e.ts)}</span> ${esc(e.text)}</div>`
     )
     .join("\n");
@@ -829,16 +829,18 @@ function connectLogs() {
     }
     if (m.type !== "line") return;
     const src = m.source || "app";
+    const level = (m.line && m.line.level) || (m.line && m.line.stream === "err" ? "error" : "out");
     const entry = {
       key: m.line && m.line.ts ? m.line.ts : "",
       ts: m.line && m.line.ts ? m.line.ts.slice(11, 19) : "",
       text: (m.line && m.line.text != null ? String(m.line.text) : "").trimEnd(),
-      err: !!(m.line && m.line.stream === "err"),
+      cls: level === "error" ? "err" : level === "warn" ? "warn" : "",
     };
-    if (entry.text === "" && !entry.err) return;
+    const skipText = entry.text === "" && !entry.cls;
+    if (skipText) return;
     // The stream replays the full history on every (re)connect, so skip any
     // line that this tab has already seen for the source.
-    const sig = (m.line && m.line.ts || "") + "|" + entry.text + "|" + entry.err;
+    const sig = (m.line && m.line.ts || "") + "|" + entry.text + "|" + entry.cls;
     if (!logSeen.has(src)) logSeen.set(src, new Set());
     if (logSeen.get(src).has(sig)) return;
     logSeen.get(src).add(sig);

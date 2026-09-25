@@ -46,7 +46,7 @@ function _spawnMariadbd() {
       windowsHide: true,
     });
     child = c;
-    logs.log("db", `mariadbd starting (port ${db.port})...`);
+    logs.log("db", `-- mariadbd starting (pid ${c.pid}, port ${db.port}) --`);
     logs.attachChild("db", c);
     let settled = false;
     c.stdout && c.stdout.once("data", () => settle(true));

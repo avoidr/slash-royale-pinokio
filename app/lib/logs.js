@@ -64,14 +64,30 @@ class Logs extends EventEmitter {
     return child;
   }
 
+  _normalize(name, raw, stream) {
+    if (name !== "db") return { text: raw, stream, level: stream === "err" ? "error" : "info" };
+    // mariadbd --console writes its startup/connection lines to stderr and
+    // prefixes them with its own timestamp ("2026-09-25 16:58:42 0 [Note] ...").
+    // Strip that duplicate timestamp and fold the severity into the same
+    // [Info]/[Warn]/[Error] tags the game servers use. Route non-error lines
+    // to stream "out" so they render with normal styling instead of red.
+    const m = raw.match(/^(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}:\d{2})\s+\d+\s+\[(Note|Warning|Error|ERROR)\]\s?(.*)$/i);
+    if (!m) return { text: raw, stream: "out", level: "info" };
+    const tag = { note: "[Info]", warning: "[Warn]", error: "[Error]", error2: "[Error]" }[m[2].toLowerCase()];
+    const isErr = /error/i.test(m[2]);
+    return { text: `${tag} ${m[3]}`, stream: isErr ? "err" : "out", level: isErr ? "error" : /warning/i.test(m[2]) ? "warn" : "info" };
+  }
+
   _chunk(name, chunk, stream) {
     const text = chunk.toString();
     for (const raw of text.split(/\r?\n/)) {
       if (raw.length === 0) continue;
-      if (raw.length > 2000) {
-        this.push(name, stream === "err" ? "err" : "out", raw.slice(0, 2000) + "...");
+      const n = this._normalize(name, raw, stream);
+      const t = n.text;
+      if (t.length > 2000) {
+        this.push(name, n.stream, t.slice(0, 2000) + "...", n.level);
       } else {
-        this.push(name, stream === "err" ? "err" : "out", raw);
+        this.push(name, n.stream, t, n.level);
       }
     }
   }

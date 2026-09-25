@@ -100,13 +100,17 @@ function spawnProc(name) {
   }
   rec.state = "starting";
   rec.ready = false;
+  // Remember where the log history ends right now so waitReady only inspects
+  // lines produced by THIS spawn (on restart the old instance's "ready" banner
+  // is still in the buffer and would otherwise match instantly).
+  rec.watchFrom = logs.history(name).length;
   const c = spawn(dotnet, [info.dll], {
     cwd: info.dir(),
     windowsHide: true,
   });
   rec.child = c;
   writePid(name, c.pid);
-  logs.log(name, `${info.title} starting (pid ${c.pid})...`);
+  logs.log(name, `-- ${info.title} starting (pid ${c.pid}) --`);
   logs.attachChild(name, c);
   c.once("error", (err) => {
     logs.log(name, `${info.title} failed to start: ${err.message}`);
@@ -128,12 +132,13 @@ async function waitReady(name, timeoutMs = 30000) {
   const info = PROC[name];
   const rec = procs[name];
   const start = Date.now();
-  const buf = logs.history(name);
   while (Date.now() - start < timeoutMs) {
     if (info.readyOn) {
       let matched = false;
       try {
-        const tail = logs.history(name).map((l) => l.text).slice(-40).join("\n");
+        const buf = logs.history(name);
+        const watch = typeof rec.watchFrom === "number" ? buf.slice(rec.watchFrom) : buf;
+        const tail = watch.map((l) => l.text).slice(-40).join("\n");
         matched = info.readyOn.test(tail);
       } catch (e) {}
       if (matched) {

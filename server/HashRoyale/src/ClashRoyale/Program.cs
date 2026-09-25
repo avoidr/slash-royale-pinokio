@@ -10,11 +10,11 @@ namespace ClashRoyale
     {
         private static void Main()
         {
-            Console.Title = "HashRoyale";
+            Console.Title = "SlashRoyale";
 
-            Console.WriteLine("\r\n    __  __              __     ____                        __    \r\n   / / / /____ _ _____ / /_   / __ \\ ____   __  __ ____ _ / /___ \r\n  / /_/ // __ `// ___// __ \\ / /_/ // __ \\ / / / // __ `// // _ \\\r\n / __  // /_/ /(__  )/ / / // _, _// /_/ // /_/ // /_/ // //  __/\r\n/_/ /_/ \\__,_//____//_/ /_//_/ |_| \\____/ \\__, / \\__,_//_/ \\___/ \r\n                                         /____/                  \r\n");
-            Console.WriteLine("Fork of ZrdRoyale by Hashmane");
-            Console.WriteLine("Thanks to Zordon1337 for work on orginal version of ZrdRoyale");
+            Console.WriteLine("\r\n   _____ __           __    ____                    __\r\n  / ___// /___ ______/ /_  / __ \\____  __  ______ _/ /__\r\n  \\__ \\/ / __ `/ ___/ __ \\/ /_/ / __ \\/ / / / __ `/ / _ \\\r\n ___/ / / /_/ (__  ) / / / _, _/ /_/ / /_/ / /_/ / /  __/\r\n/____/_/\\__,_/____/_/ /_/_/ |_|\\____/\\__, /\\__,_/_/\\___/\r\n                                    /____/   by avoidr\r\n");
+            Console.WriteLine("Based on HashRoyale by Hashmane");
+            Console.WriteLine("Credits to Hashmane (HashRoyale) & Zordon1337 (ZrdRoyale)");
             Resources.Initialize();
            
             WebhookUtils.SendNotify(Resources.Configuration.Srv_Webhook, Resources.LangConfiguration.SrvStarting, "Server Log");

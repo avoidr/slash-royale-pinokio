@@ -224,6 +224,7 @@ input[type="search"] { width: 220px; }
 .log-line .log-src { color: var(--gold); margin-right: 6px; font-weight: 600; }
 .log-line .log-ts { color: #5f6f96; margin-right: 6px; }
 .log-line.err { color: #ff9d9d; }
+.log-line.warn { color: #ffc46b; }
 
 @media (max-width: 720px) {
   header { flex-wrap: wrap; }
