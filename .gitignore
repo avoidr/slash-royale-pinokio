@@ -1,0 +1,26 @@
+ENVIRONMENT
+node_modules
+venv
+.env
+.*
+~*
+/logs/
+/cache/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/QWEN.md
+/SPEC.md
+
+# runtime dependencies installed by install.js
+/env/
+# publish outputs (built binaries)
+/server/publish
+/server/publish-battles
+# panel-local data generated at runtime (settings, keystore, built APKs, pid files)
+/app/data/
+# bundled base client (large, user-supplied, not committed)
+/app/assets/*.apk
+/app/assets/*.part
+/app/node_modules/
+nul
