@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { spawn } = require("child_process");
+const { EventEmitter } = require("events");
 const yauzl = require("yauzl");
 const yazl = require("yazl");
 const { p, exists } = require("./paths");
@@ -23,6 +23,113 @@ const BATTLE_PATCHES = [
   { offset: 0x001c27f0, from: 0xd0, to: 0xd1 },
   { offset: 0x001c2b40, from: 0x90, to: 0x92 },
 ];
+
+const BASE_APK_URL =
+  "https://dw.malavida.com/eG9ic0lPcS8vMlk3MnJvVEF2WXJhdW4zRHI4V2NuYkZsdjMvUkVJeUhVcUVZckpjWU5sbFBmN25TNlRCK3ZuYmFhYmZ1W/XBuWXRhbmh0b0xuVVYyVjdaVFkwT0dlMTV0Snl2Mktjd1R2Y2hqdkRaK05lMXZSRjRzdEJranZacUprNGRsZ282YURQQi/tNNTFSMHgyMjMxZCtsYjllTXYza21wajQ0bXk5ZFBPVjEyVDNySTJUUXN0K2lXbzVXTWlTeWN2UkNKamJPMmN6dThkaVp/DeUlycTdDUkFVNDJvd2J5ejhJV2ZZODQvakpJUGZmSjgzTnVFK3V4ckVaSFNrbkhnTnNHQTNWTkduU25pdWYwUUV5VHQ0/aWlHQTFsY0RJa25SbmRBVmNXaHFOT0NVWUM1V0tXS3dsR2l4cXZjNkY2Yk1NQitvMnZpbGx4bHFYNklEaHdobE95elZ2a/2tCcE9IVFpjSGdIUG5od25TbEthMlBQcTROT3ZWVlFGKzZnVzlubjNJR1AxNjRIUXNPd1oxbVJiWm5kNzRYV3FFUldrZk/xDRXB0enhyNjFYYlJXV2x4U3dhNEs0TDVTQXgrS21QSmQ1QlZnL2tLcEt0OUJXTmtLSktrQy80UnA3NFJnOHprUHB3NE5/rL3Q5bGFEY2RrTVBzT2tYa0pQN1NoamFOb3lZZ0lEQ1VJa2RXVEFnUTlhd09lelRRVitJRGM5aGIvSFFzUVM2SzVJPQ==/dcaf347cab1e89b4";
+
+const downloadBus = new EventEmitter();
+const downloadState = {
+  active: false,
+  done: false,
+  bytes: 0,
+  total: 0,
+  pct: null,
+  error: null,
+};
+
+function setDownload(patch) {
+  Object.assign(downloadState, patch);
+  const t = downloadState.total;
+  downloadState.pct = t ? Math.min(100, (downloadState.bytes / t) * 100) : null;
+  downloadBus.emit("progress", currentDownloadState());
+}
+
+function currentDownloadState() {
+  return { ...downloadState };
+}
+
+function onDownload(cb) {
+  downloadBus.on("progress", cb);
+}
+
+function offDownload(cb) {
+  downloadBus.removeListener("progress", cb);
+}
+
+function isApkFile(file) {
+  try {
+    const fd = fs.openSync(file, "r");
+    const buf = Buffer.alloc(4);
+    fs.readSync(fd, buf, 0, 4, 0);
+    fs.closeSync(fd);
+    return buf[0] === 0x50 && buf[1] === 0x4b;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function runDownload(url) {
+  const tmp = p.baseApk + ".part";
+  if (!url) {
+    setDownload({ active: false, done: false, error: "No base client download URL configured." });
+    return;
+  }
+  try {
+    fs.mkdirSync(path.dirname(p.baseApk), { recursive: true });
+    logs.log("apk", "Downloading base client...");
+    const resp = await fetch(url, { redirect: "follow" });
+    if (!resp.ok || !resp.body) throw new Error(`Download request failed (HTTP ${resp.status}).`);
+    const total = Number(resp.headers.get("content-length")) || 0;
+    setDownload({ total, error: null });
+
+    const reader = resp.body.getReader();
+    const ws = fs.createWriteStream(tmp);
+    await new Promise((resolve, reject) => {
+      const pump = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              ws.end(() => resolve());
+              return;
+            }
+            await new Promise((ok, no) => ws.write(Buffer.from(value), (e) => (e ? no(e) : ok())));
+            setDownload({ bytes: downloadState.bytes + value.length });
+          }
+        } catch (e) {
+          ws.destroy();
+          reject(e);
+        }
+      };
+      pump();
+    });
+
+    const size = fs.statSync(tmp).size;
+    if (size < 1024 * 1024 || !isApkFile(tmp)) {
+      throw new Error("Downloaded file is not a valid APK (missing ZIP header / too small).");
+    }
+    fs.rmSync(p.baseApk, { force: true });
+    fs.renameSync(tmp, p.baseApk);
+    setDownload({ active: false, done: true, bytes: size, error: null });
+    logs.log("apk", `Base client downloaded (${formatBytes(size)}).`);
+  } catch (e) {
+    try { fs.rmSync(tmp, { force: true }); } catch (e2) {}
+    setDownload({ active: false, done: false, error: e.message || String(e) });
+    logs.log("apk", `Base client download failed: ${e.message}`);
+  }
+}
+
+function startDownload(url) {
+  if (exists(p.baseApk)) {
+    return currentDownloadState();
+  }
+  if (downloadState.active) {
+    return currentDownloadState();
+  }
+  setDownload({ active: true, done: false, bytes: 0, total: 0, pct: null, error: null });
+  runDownload(url || BASE_APK_URL).catch(() => {});
+  return currentDownloadState();
+}
 
 let building = false;
 
@@ -467,7 +574,7 @@ async function build(opts = {}) {
   const outputPath = opts.outputPath || path.join(p.apkDir, `clash-royale-${Date.now()}.apk`);
 
   if (!exists(p.baseApk)) {
-    throw new Error("Base APK not found at app/assets/retroroyale.apk. Place your base client there.");
+    throw new Error("Base APK not found at app/assets/retroroyale.apk. Download it from the APK Builder tab.");
   }
   await ensureKeystore();
 
@@ -566,4 +673,4 @@ async function status() {
   };
 }
 
-module.exports = { build, status, ensureKeystore, signApk };
+module.exports = { build, status, ensureKeystore, signApk, startDownload, currentDownloadState, onDownload, offDownload, BASE_APK_URL };

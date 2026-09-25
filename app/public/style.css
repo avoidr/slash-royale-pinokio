@@ -147,6 +147,29 @@ td[contenteditable]:hover, td[contenteditable]:focus { outline: 1px dashed var(-
 }
 .apk-summary ul { margin: 4px 0 0; padding-left: 22px; color: var(--muted); font-size: 13px; }
 
+/* ---- base client download overlay ---- */
+#apk-dl-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(6, 10, 20, 0.85);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+#apk-dl-overlay[hidden] { display: none; }
+.apk-dl-card {
+  width: 480px; max-width: 100%;
+  background: var(--card); border: 1px solid var(--gold2); border-radius: 14px;
+  padding: 22px; box-shadow: 0 12px 44px rgba(0, 0, 0, 0.6);
+}
+.apk-dl-title { font-size: 16px; font-weight: 700; color: var(--gold); margin-bottom: 10px; }
+.apk-dl-body { color: var(--muted); font-size: 13px; line-height: 1.55; margin-bottom: 16px; }
+.apk-dl-progress { margin-top: 6px; }
+.pbar {
+  height: 12px; background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 8px; overflow: hidden;
+}
+.pbar-fill { height: 100%; width: 0; background: var(--gold); transition: width 0.2s; }
+#apk-dl-status { margin-top: 8px; }
+
 /* ---- database tab ---- */
 .db-grid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
 .db-tables { max-height: 560px; }

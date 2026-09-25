@@ -313,6 +313,30 @@ router.post("/apk/build", wrap(async (req) => {
 
 router.get("/apk/status", wrap(async () => ({ ok: true, ...(await apk.status()) })));
 
+router.post("/apk/download", wrap(async () => {
+  apk.startDownload();
+  return { ok: true, state: apk.currentDownloadState() };
+}));
+
+router.get("/apk/download/stream", (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders();
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  send({ type: "state", state: apk.currentDownloadState() });
+  const onState = (state) => send({ type: "state", state });
+  apk.onDownload(onState);
+  const heartbeat = setInterval(() => send({ type: "ping" }), 25000);
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    apk.offDownload(onState);
+  });
+});
+
 // ---- logs ----
 router.get("/logs", (req, res) => {
   const out = {};

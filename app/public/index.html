@@ -215,6 +215,23 @@
 
 </main>
 
+<div id="apk-dl-overlay" hidden>
+  <div class="apk-dl-card">
+    <div class="apk-dl-title">Base client missing</div>
+    <div class="apk-dl-body">The APK Builder needs the RetroRoyale base client at
+      <code>app/assets/retroroyale.apk</code> before it can build anything. Download it now
+      (~90&nbsp;MB) to enable the builder, or close this popup to skip.</div>
+    <div class="frow">
+      <button id="btn-apk-dl" class="btn gold">Download base client</button>
+      <button id="btn-apk-dl-close" class="btn">Not now</button>
+    </div>
+    <div class="apk-dl-progress" id="apk-dl-progress" hidden>
+      <div class="pbar"><div class="pbar-fill" id="apk-dl-fill"></div></div>
+      <div class="muted" id="apk-dl-status"></div>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>

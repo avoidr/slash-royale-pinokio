@@ -52,6 +52,7 @@ document.querySelectorAll("#tabs .tab").forEach((btn) => {
     btn.classList.add("active");
     document.querySelectorAll("main .panel").forEach((p) => p.classList.remove("active"));
     $("tab-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "apk") ensureApkOverlay();
   });
 });
 
@@ -108,6 +109,8 @@ function renderStatus() {
 async function refreshStatus() {
   try {
     state.status = await getJSON("/api/status");
+    state.apkMissing = !!(state.status.apk && state.status.apk.baseApk === false);
+    refreshApkOverlay();
     renderStatus();
   } catch (e) {
     $("head-status").textContent = "offline";
@@ -721,6 +724,94 @@ function showApkOutput(path, size, entries, signed) {
   code.textContent = `${path}${size ? `  (${(size / 1048576).toFixed(1)} MB, ${entries} entries${signed ? ", signed" : ""})` : ""}`;
   box.appendChild(code);
 }
+
+/* ---- base client download overlay ---- */
+let apkDlEs = null;
+
+function showApkOverlay() {
+  $("apk-dl-overlay").hidden = false;
+  connectApkDl();
+}
+
+function hideApkOverlay() {
+  $("apk-dl-overlay").hidden = true;
+  disconnectApkDl();
+}
+
+function ensureApkOverlay() {
+  if (state.apkMissing) showApkOverlay();
+  else hideApkOverlay();
+}
+
+function refreshApkOverlay() {
+  if (!$("apk-dl-overlay").hidden && !state.apkMissing) hideApkOverlay();
+}
+
+function connectApkDl() {
+  if (apkDlEs) return;
+  const es = new EventSource("/api/apk/download/stream");
+  es.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.type === "state") applyApkDlState(m.state);
+  };
+  es.onerror = () => {
+    try { es.close(); } catch (e) {}
+    apkDlEs = null;
+  };
+  apkDlEs = es;
+}
+
+function disconnectApkDl() {
+  if (!apkDlEs) return;
+  try { apkDlEs.close(); } catch (e) {}
+  apkDlEs = null;
+}
+
+function applyApkDlState(s) {
+  if (!s) return;
+  const btn = $("btn-apk-dl");
+  const prog = $("apk-dl-progress");
+  const fill = $("apk-dl-fill");
+  const status = $("apk-dl-status");
+  if (s.done) {
+    state.apkMissing = false;
+    hideApkOverlay();
+    loadApk();
+    return;
+  }
+  if (s.error) {
+    prog.hidden = false;
+    btn.disabled = false;
+    btn.textContent = "Download base client";
+    fill.style.width = "0";
+    status.textContent = "Download failed: " + s.error;
+    return;
+  }
+  if (s.active) {
+    prog.hidden = false;
+    btn.disabled = true;
+    btn.textContent = "Downloading…";
+    fill.style.width = (s.pct == null ? 0 : Math.min(100, s.pct)) + "%";
+    status.textContent = s.total
+      ? `Downloading… ${fmtSize(s.bytes)} / ${fmtSize(s.total)} (${Math.floor((s.bytes / s.total) * 100)}%)`
+      : `Downloading… ${fmtSize(s.bytes)}`;
+    return;
+  }
+  prog.hidden = true;
+  btn.disabled = false;
+  btn.textContent = "Download base client";
+  status.textContent = "";
+}
+
+$("btn-apk-dl").addEventListener("click", async () => {
+  try {
+    await postJSON("/api/apk/download");
+  } catch (e) {
+    toast(e.message);
+  }
+});
+
+$("btn-apk-dl-close").addEventListener("click", hideApkOverlay);
 
 async function loadApk() {
   const j = await getJSON("/api/apk/status");
