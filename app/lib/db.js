@@ -200,7 +200,7 @@ async function initDb() {
       logs.log("db", "Database schema imported.");
     }
   } catch (e) {
-    logs.log("db", `Database setup failed: ${e.message}`);
+    logs.log("db", `Database setup failed: ${e.message}${e.stderr ? "\n" + e.stderr.slice(-2000) : ""}`);
     throw e;
   }
 }
