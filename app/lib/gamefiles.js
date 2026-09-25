@@ -133,7 +133,7 @@ function restoreAll() {
     }
   };
   copyDir(src, dst);
-  logs.log("gamefiles", "Restored pristine GameAssets from the HashRoyale clone.");
+  logs.log("gamefiles", "Restored pristine GameAssets from the SlashRoyale source.");
   return { ok: true };
 }
 

@@ -12,7 +12,7 @@ const p = {
   envDir: path.join(ROOT, "env"),
   envLogs: path.join(ROOT, "env", "logs"),
   serverDir: path.join(ROOT, "server"),
-  cloneDir: path.join(ROOT, "server", "HashRoyale"),
+  cloneDir: path.join(ROOT, "server", "SlashRoyale"),
   mainServerDir: path.join(ROOT, "server", "publish"),
   battlesServerDir: path.join(ROOT, "server", "publish-battles"),
 
@@ -29,10 +29,10 @@ const p = {
   assetsDir: path.join(APP, "assets"),
   baseApk: path.join(APP, "assets", "retroroyale.apk"),
 
-  csprojMain: path.join(ROOT, "server", "HashRoyale", "src", "ClashRoyale", "ClashRoyale.csproj"),
-  csprojBattles: path.join(ROOT, "server", "HashRoyale", "src", "ClashRoyale.Battles", "ClashRoyale.Battles.csproj"),
-  databaseSql: path.join(ROOT, "server", "HashRoyale", "src", "ClashRoyale", "GameAssets", "database.sql"),
-  pristineGameAssets: path.join(ROOT, "server", "HashRoyale", "src", "ClashRoyale", "GameAssets"),
+  csprojMain: path.join(ROOT, "server", "SlashRoyale", "src", "ClashRoyale", "ClashRoyale.csproj"),
+  csprojBattles: path.join(ROOT, "server", "SlashRoyale", "src", "ClashRoyale.Battles", "ClashRoyale.Battles.csproj"),
+  databaseSql: path.join(ROOT, "server", "SlashRoyale", "src", "ClashRoyale", "GameAssets", "database.sql"),
+  pristineGameAssets: path.join(ROOT, "server", "SlashRoyale", "src", "ClashRoyale", "GameAssets"),
   gameAssets: path.join(ROOT, "server", "publish", "GameAssets"),
 
   mainDll: path.join(ROOT, "server", "publish", "ClashRoyale.dll"),

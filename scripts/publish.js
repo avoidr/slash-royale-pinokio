@@ -26,12 +26,12 @@ if (!fs.existsSync(sdkDir) || fs.readdirSync(sdkDir).filter(f => !f.startsWith('
 const targets = [
   {
     name: "ClashRoyale (main server)",
-    csproj: path.join(root, "server", "HashRoyale", "src", "ClashRoyale", "ClashRoyale.csproj"),
+    csproj: path.join(root, "server", "SlashRoyale", "src", "ClashRoyale", "ClashRoyale.csproj"),
     out: path.join(root, "server", "publish"),
   },
   {
     name: "ClashRoyale.Battles (battle server)",
-    csproj: path.join(root, "server", "HashRoyale", "src", "ClashRoyale.Battles", "ClashRoyale.Battles.csproj"),
+    csproj: path.join(root, "server", "SlashRoyale", "src", "ClashRoyale.Battles", "ClashRoyale.Battles.csproj"),
     out: path.join(root, "server", "publish-battles"),
   },
 ];

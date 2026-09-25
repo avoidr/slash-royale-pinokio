@@ -5,7 +5,7 @@ module.exports = {
       method: "shell.run",
       params: {
         message: "{{which('node')}} scripts/retarget-battles.js",
-        when: "{{exists('server/HashRoyale/src/ClashRoyale.Battles/ClashRoyale.Battles.csproj')}}"
+        when: "{{exists('server/SlashRoyale/src/ClashRoyale.Battles/ClashRoyale.Battles.csproj')}}"
       }
     },
 

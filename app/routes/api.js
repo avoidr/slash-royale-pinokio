@@ -311,11 +311,6 @@ router.post("/apk/build", wrap(async (req) => {
   return await apk.build(body);
 }));
 
-router.post("/apk/original", wrap(async (req) => {
-  const body = req.body || {};
-  return await apk.restoreOriginal({ outputPath: body.outputPath });
-}));
-
 router.get("/apk/status", wrap(async () => ({ ok: true, ...(await apk.status()) })));
 
 // ---- logs ----

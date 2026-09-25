@@ -1,5 +1,5 @@
 {
   "title": "Slash Royale",
-  "description": "Self-hosted Clash Royale private server (HashRoyale fork) with a web admin panel: one-click start for MariaDB + game servers, live logs, a CSV editor for game data, and an APK builder that patches the bundled RetroRoyale base client to point at your server, re-signs it, or rebuilds the original client. Runs on Windows, macOS, and Linux.",
+  "description": "Self-hosted Clash Royale private server (based on HashRoyale) with a web admin panel: one-click start for MariaDB + game servers, live logs, a CSV editor for game data, and an APK builder that patches the bundled RetroRoyale base client to point at your server and re-signs it. Runs on Windows, macOS, and Linux.",
   "icon": "icon.png"
 }

@@ -1,4 +1,4 @@
-# <p align="center">HashRoyale<p><p align="center">Clash Royale server for version 1.9.2<p>
+# <p align="center">SlashRoyale<p><p align="center">Clash Royale server for version 1.9.2<p>
 [![clash royale](https://img.shields.io/badge/Clash%20Royale-1.9.2-brightred.svg?style=flat")](https://clash-royale.en.uptodown.com/android/download/1632865)
 [![patched client](https://img.shields.io/badge/Patched_APK-1.9.2-7b00bd)](https://retroroyale.en.malavida.com/android/)
 [![wiki](https://img.shields.io/badge/Wiki-HashRoyale-00bd8e)](https://github.com/Hashmane/HashRoyale/wiki)

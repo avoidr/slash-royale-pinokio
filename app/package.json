@@ -1,8 +1,8 @@
 {
-  "name": "clash-royale-ps-panel",
+  "name": "slash-royale-panel",
   "version": "1.0.0",
   "private": true,
-  "description": "Admin panel for a HashRoyale (Clash Royale) private server",
+  "description": "Admin panel for the SlashRoyale (Clash Royale) private server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

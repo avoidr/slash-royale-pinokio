@@ -2,8 +2,8 @@ const path = require("path")
 
 module.exports = {
   version: "7.0",
-  title: "Clash Royale Private Server",
-  description: "Self-hosted Clash Royale private server (HashRoyale) with web admin panel and APK builder",
+  title: "SlashRoyale",
+  description: "Self-hosted Clash Royale private server (SlashRoyale fork) with web admin panel and APK builder",
   menu: async (kernel, info) => {
     let installed = info.exists("env") && info.exists("app/node_modules")
     let installing = info.running("install.js")

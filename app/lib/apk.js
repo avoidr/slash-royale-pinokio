@@ -49,7 +49,7 @@ async function ensureKeystore() {
         "-keyalg", "RSA",
         "-keysize", "2048",
         "-validity", "10000",
-        "-dname", "CN=HashRoyale Private Server, OU=PS, O=PS, L=Local, ST=Local, C=US",
+        "-dname", "CN=SlashRoyale Private Server, OU=PS, O=PS, L=Local, ST=Local, C=US",
       ]);
     } catch (e) {
       throw new Error("Unable to generate keystore: " + (e.stderr || e.message));
@@ -465,7 +465,6 @@ async function build(opts = {}) {
   const patchAddress = opts.patchAddress !== undefined ? opts.patchAddress : !!address;
   const bakeGamefilesOn = opts.bakeGamefiles !== undefined ? !!opts.bakeGamefiles : true;
   const outputPath = opts.outputPath || path.join(p.apkDir, `clash-royale-${Date.now()}.apk`);
-  const original = !!opts.original;
 
   if (!exists(p.baseApk)) {
     throw new Error("Base APK not found at app/assets/retroroyale.apk. Place your base client there.");
@@ -494,19 +493,17 @@ async function build(opts = {}) {
       logs.log("apk", `Client ABIs: ${abis.join(", ")}${has64 ? "" : " (32-bit only)"}`);
     }
 
-    const report = { original, address: null, battles: [], csv: null };
-    if (!original) {
-      const patched = patchLibg(stage, patchAddress ? address : "", patchBattles);
-      Object.assign(report, patched);
+    const report = { address: null, battles: [], csv: null };
+    const patched = patchLibg(stage, patchAddress ? address : "", patchBattles);
+    Object.assign(report, patched);
 
-      if (bakeGamefilesOn) {
-        const baked = await bakeGamefiles(stage);
-        report.csv = { baked };
-        if (baked.length) {
-          logs.log("apk", `Baked ${baked.length} edited game CSVs into the client.`);
-        } else {
-          logs.log("apk", "No editable game CSVs found to bake into the client.");
-        }
+    if (bakeGamefilesOn) {
+      const baked = await bakeGamefiles(stage);
+      report.csv = { baked };
+      if (baked.length) {
+        logs.log("apk", `Baked ${baked.length} edited game CSVs into the client.`);
+      } else {
+        logs.log("apk", "No editable game CSVs found to bake into the client.");
       }
     }
 
@@ -543,14 +540,6 @@ async function build(opts = {}) {
   }
 }
 
-async function buildCustom(opts) {
-  return build(opts);
-}
-
-async function restoreOriginal(opts) {
-  return build({ ...opts, original: true, patchAddress: false, patchBattles: false });
-}
-
 async function status() {
   const s = settings.get();
   return {
@@ -577,4 +566,4 @@ async function status() {
   };
 }
 
-module.exports = { build, buildCustom, restoreOriginal, status, ensureKeystore, signApk };
+module.exports = { build, status, ensureKeystore, signApk };

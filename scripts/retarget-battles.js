@@ -5,7 +5,7 @@ const path = require("path");
 
 const file = path.resolve(
   "server",
-  "HashRoyale",
+  "SlashRoyale",
   "src",
   "ClashRoyale.Battles",
   "ClashRoyale.Battles.csproj"
