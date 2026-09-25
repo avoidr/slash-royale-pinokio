@@ -28,9 +28,11 @@ const PROC = {
     pidFile: () => path.join(p.appData, "battles.pid"),
     dotnetBin: () => p.dotnetBin,
     port: () => 9449,
-    // The battle server speaks UDP on 9449 (use_udp), so a TCP port probe can
-    // never detect it. Match the banner it prints once the socket is bound
-    // instead, exactly like the main server's readyOn regex.
+    // The battle server is only started when use_udp is enabled (Config tab →
+    // Battle server). Its gameplay socket speaks UDP on 9449, so a TCP port probe
+    // can never detect it; match the banner it prints once the socket is bound
+    // instead. When use_udp is off the battles process is not needed at all —
+    // matches run on the main server over the clients' existing TCP connection.
     readyOn: /Time to fight!/i,
   },
 };
@@ -39,6 +41,18 @@ const procs = {
   main: { child: null, state: "stopped", ready: false },
   battles: { child: null, state: "stopped", ready: false },
 };
+
+// The battle server is only meaningful when the main server hands battles off to
+// a UDP battle node (use_udp=true). With use_udp=false the main server simulates
+// battles itself over the clients' existing TCP connection, so the battle server
+// process is neither started nor waited on.
+function battlesEnabled() {
+  try {
+    return !!config.readMain().use_udp;
+  } catch (e) {
+    return false;
+  }
+}
 
 function treeKill(pid) {
   return new Promise((resolve) => {
@@ -185,6 +199,14 @@ function ensureLang() {
 
 async function start(name) {
   const rec = procs[name];
+  if (name === "battles" && !battlesEnabled()) {
+    // Matches run on the main server when the battle server is disabled; never
+    // spawn a process that would just sit retrying the cluster connection.
+    rec.state = "disabled";
+    rec.ready = false;
+    logs.log("battles", "Battle server is disabled (use_udp=false) — matches run on the main server. Process not started.");
+    return { ok: true, state: "disabled", enabled: false };
+  }
   if (rec.child && rec.child.exitCode === null) {
     return { ok: true, state: rec.state };
   }
@@ -227,6 +249,7 @@ async function status() {
   const out = {};
   for (const name of ["main", "battles"]) {
     const rec = procs[name];
+    const enabled = name === "battles" ? battlesEnabled() : true;
     const pid = rec.child ? rec.child.pid : readPid(name);
     const alive = rec.child ? rec.child.exitCode === null : pidAlive(pid);
     let running = !!(rec.child && rec.child.exitCode === null);
@@ -235,13 +258,16 @@ async function status() {
       running = true;
       rec.state = "orphan";
     }
+    let state = running ? (rec.ready ? "running" : "starting") : rec.state;
+    if (name === "battles" && !enabled && !running) state = "disabled";
     out[name] = {
-      state: running ? (rec.ready ? "running" : "starting") : rec.state,
+      state,
       running,
       ready: running ? rec.ready : false,
       pid: running ? pid : null,
       port: PROC[name].port(),
       installed: exists(path.join(PROC[name].dir(), PROC[name].dll)),
+      enabled,
     };
   }
   return out;
@@ -280,4 +306,4 @@ async function autoStart() {
   await start("battles").catch((e) => logs.log("battles", `start error: ${e.message}`));
 }
 
-module.exports = { start, stop, restart, status, running, shutdown, autoStart, procs };
+module.exports = { start, stop, restart, status, running, shutdown, autoStart, battlesEnabled, procs };

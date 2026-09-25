@@ -66,7 +66,10 @@ const defaultConfig = {
   DefaultGold: 1000,
   DefaultGems: 1000,
   DefaultLevel: 1,
-  use_udp: true,
+  // Battle server disabled by default: matches run on the main server over TCP.
+  // The UDP battle-server path is currently unusable for remote devices (it hands
+  // the client a loopback IP as the battle host), so new installs default to off.
+  use_udp: false,
   BattleLog_WebhookUrl: "",
   PlayerLog_WebhookUrl: "",
   ServerLog_WebhookUrl: "",

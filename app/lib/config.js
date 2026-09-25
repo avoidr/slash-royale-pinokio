@@ -26,7 +26,8 @@ const MAIN_DEFAULTS = {
   DefaultGold: 0,
   DefaultGems: 0,
   DefaultLevel: 1,
-  use_udp: true,
+  // Disabled by default, see "battle server disabled" note in scripts/publish.js.
+  use_udp: false,
   GemsToGiveAfterMatch: 0,
   GoldToGiveAfterMatch: 0,
   admins: [],

@@ -72,12 +72,15 @@ function renderStatus() {
   const { servers, db } = st;
   const mainRunning = !!(servers && servers.main && servers.main.running);
   const battlesRunning = !!(servers && servers.battles && servers.battles.running);
+  // battles.enabled mirrors use_udp; when false the battle server process is
+  // neither running nor expected, so it must not block the "running" state.
+  const battlesEnabled = !!(servers && servers.battles && servers.battles.enabled !== false);
   const dbUp = !!(db && (db.ready || db.running));
   const anyUp = mainRunning || battlesRunning || dbUp;
 
   pill("db", dbUp, "Database");
   pill("main", mainRunning, "Main server");
-  pill("battles", battlesRunning, "Battle server");
+  pill("battles", battlesEnabled && battlesRunning, battlesEnabled ? "Battle server" : "Battle server (disabled)");
 
   const btn = $("btn-stack");
   btn.textContent = anyUp ? "Stop server" : "Start server";
@@ -101,9 +104,9 @@ function renderStatus() {
       ? "Missing: " + missing.join(", ") + ". Run the launcher Install step first."
       : "All components installed.";
 
-  $("head-status").textContent =
-    mainRunning && battlesRunning ? "running" : anyUp ? "starting…" : "stopped";
-  $("head-status").className = "head-status " + (mainRunning && battlesRunning ? "on" : "off");
+  const allOk = mainRunning && (battlesEnabled ? battlesRunning : true);
+  $("head-status").textContent = allOk ? "running" : anyUp ? "starting…" : "stopped";
+  $("head-status").className = "head-status " + (allOk ? "on" : "off");
 }
 
 async function refreshStatus() {
@@ -856,6 +859,8 @@ async function loadConfig() {
   }
   const up = $("cfg-meta");
   if (up) up.textContent = j.config.update_url ? `Auto-update URL: ${j.config.update_url}` : "No auto-update URL configured.";
+  const bt = $("cfg-battles");
+  if (bt) bt.checked = !!j.config.use_udp;
 }
 
 async function saveConfig() {
@@ -883,6 +888,28 @@ async function saveConfig() {
 
 $("cfg-load").addEventListener("click", loadConfig);
 $("cfg-save").addEventListener("click", saveConfig);
+
+$("cfg-battles").addEventListener("change", async () => {
+  const bt = $("cfg-battles");
+  const next = bt.checked;
+  try {
+    const j = await postJSON("/api/settings/battles", { enabled: next });
+    if (j.ok === false) {
+      bt.checked = !next;
+      toast(j.error || "failed to update battle server setting");
+      return;
+    }
+    toast(j.changed
+      ? (next
+        ? "Battle server enabled — restart the server stack to apply."
+        : "Battle server disabled — matches now run on the main server.")
+      : "No change — setting already in effect.");
+    refreshStatus();
+  } catch (e) {
+    bt.checked = !next;
+    toast(e.message || "failed to update battle server setting");
+  }
+});
 
 /* ---------------- logs ---------------- */
 const logCap = new Map();

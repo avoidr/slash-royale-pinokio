@@ -16,21 +16,23 @@ Install it from Pinokio, and the panel gives you an all-in-one way to run and ma
 | Admin panel (Node.js) | `app/` | — |
 | MariaDB (portable) | `env/mariadb` | Server tab |
 | Main game server (.NET 8) | `server/publish` | Server tab |
-| Battle server (.NET 8) | `server/publish-battles` | Server tab |
+| Battle server (.NET 8) | `server/publish-battles` | Server tab (only started when enabled) |
 | APK toolchain (OpenJDK 21+) | `env/jdk` | APK Builder tab |
 
 Ports (fixed by the server code):
 
 - **9339** – main server, where the game client connects
-- **9449** – battle server
-- **9876** – main ↔ battle cluster (UDP, requires `use_udp: true`)
+- **9449** – battle server (*only when the battle server is enabled*, see Config tab)
+- **9876** – main ↔ battle cluster (*only when the battle server is enabled*; it is a plain TCP socket despite the "UDP" naming)
 - **3306** – MariaDB (the server connection setting has no port option, so MariaDB must stay here)
 - **3000** – admin panel
+
+> **Battle server is off by default.** With `use_udp: false` there is no battle-server process and no cluster listener at all — battles run on the **main server** over each player's existing 9339 connection, which works from any network (the UDP path hands the client a *loopback* address as the battle host, so remote devices cannot reach it). Turn it on under **Config tab → Battle server** only if you are debugging that path.
 
 ## Getting started
 
 1. **Install** (`install.js`) – installs the .NET 8 SDK (`env/dotnet`), an OpenJDK 21+ (`env/jdk`) and a portable MariaDB (`env/mariadb`) for your platform, retargets the battle project to .NET 8, publishes both game servers, and installs panel dependencies.
-2. **Start** (`start.js`) – launches the admin panel. Hit **Start server** on the Server tab to bring up the database, main server and battle server together. Each process is only marked "up" once it genuinely reports ready, and nothing listens on 3306/9339/9449 until you start the stack. The database and its schema are created automatically on the first start.
+2. **Start** (`start.js`) – launches the admin panel. Hit **Start server** on the Server tab to bring up the database and main server together (the battle server too if it is enabled). Each process is only marked "up" once it genuinely reports ready, and nothing listens on 3306/9339/9449 until you start the stack. The database and its schema are created automatically on the first start.
 3. **Build an APK** and install it on a phone (see below) — players then connect to your address on port 9339.
 
 The launcher menu also offers **Update** (re-apply the .NET 8 retarget, re-publish both servers, refresh panel dependencies) and **Reset** (wipe `env/`, `app/node_modules`, `app/data` and both `server/publish*` folders so you can reinstall from scratch).
@@ -38,7 +40,7 @@ The launcher menu also offers **Update** (re-apply the .NET 8 retarget, re-publi
 ## Using the panel
 
 ### Server & live logs
-The Server tab shows the status of the database, main and battle servers, a Start / Restart button, and the **live log** with history replayed on open. Sources: `app`, `db`, `main`, `battles`, `apk`, `gamefiles`, `activity`. Starting the stack clears the log first so you only see the current session.
+The Server tab shows the status of the database, main and battle servers, a Start / Restart button, and the **live log** with history replayed on open. The battle server pill shows a "disabled" state when the battle server is off. Sources: `app`, `db`, `main`, `battles`, `apk`, `gamefiles`, `activity`. Starting the stack clears the log first so you only see the current session.
 
 While the stack runs, **player activity** is detected by polling the `player` table every 2 s and logged under the `activity` source:
 
@@ -61,6 +63,7 @@ A no-raw-JSON way to administer accounts: list/filter every player (level, troph
 
 ### Config tab
 - **Connect** – the server address baked into rebuilt APKs. Defaults to this machine's LAN IP; **Use local IP** fills it in automatically. It's written into the client the next time you build an APK.
+- **Battle server** – enables/disables the separate battle server (`use_udp` in the main server's `config.json`, written immediately). When **off** (default), no battle-server process is started and matches run on the main server over each player's existing connection — which works from any network. When **on**, matches run on the separate `ClashRoyale.Battles` process over UDP 9449 (note: currently the server hands clients a loopback battle address, so remote devices cannot reach it). Disabling stops the battle server process right away; both directions apply for sure on the next server-stack restart.
 - **Game rules** – edits the main server's `config.json` directly (restart the stack to apply). Out-of-the-box values: `MinTrophies` **25** / `MaxTrophies` **34** — the winner of a regular battle gets a random trophy value in that range (`Random.Next(Min, Max)`, so 25–33), while friendly and 2v2 battles always award 0; `DefaultGold` **1000**, `DefaultGems` **1000**, `DefaultLevel` **1**, `GemsToGiveAfterMatch` **0**, `GoldToGiveAfterMatch` **20**.
 
 ## Building the client APK
@@ -105,6 +108,11 @@ curl -X POST http://127.0.0.1:3000/api/settings/address \
   -H "Content-Type: application/json" \
   -d '{"address":"192.168.1.50"}'
 
+# enable/disable the separate battle server (use_udp); off = matches run on the main server
+curl -X POST http://127.0.0.1:3000/api/settings/battles \
+  -H "Content-Type: application/json" \
+  -d '{"enabled":false}'
+
 # edit a game CSV (card stats / client data)
 curl http://127.0.0.1:3000/api/gamefiles/csv_logic/characters.csv
 curl -X POST http://127.0.0.1:3000/api/gamefiles/csv_logic/characters.csv \
@@ -128,6 +136,7 @@ curl -N http://127.0.0.1:3000/api/logs/all/stream
 | GET | `/api/status` | db / servers / toolchain / address / configs summary |
 | GET | `/api/settings/localip` | this machine's suggested LAN address |
 | POST | `/api/settings/address` | set the address baked into client APKs (`{address}`) |
+| POST | `/api/settings/battles` | enable/disable the battle server, `{enabled: bool}` → writes `use_udp`; disabling stops the battles process (returns `requiresRestart`) |
 | POST | `/api/stack/start` `/api/stack/stop` `/api/stack/restart` | one-click stack control |
 | GET | `/api/stack/status` | current stack state |
 | POST | `/api/db/start` `/api/db/stop` | database lifecycle (low-level) |
@@ -155,6 +164,7 @@ curl -N http://127.0.0.1:3000/api/logs/all/stream
 ## Notes & limitations
 
 - **MariaDB occupies 3306.** If a system MySQL/MariaDB already listens there, the panel refuses to start its own instance instead of fighting it. Move the other service to a different port.
+- **The separate battle server (UDP) is not usable from real devices.** When `use_udp: true` the main server tells clients to reach the battle host at `127.0.0.1:9449` (the node registers with its loopback address), so any device other than the server itself freezes ~3 s into a battle. The setting defaults to **off** so matches run on the main server over TCP instead; keep it off unless you are debugging the UDP path.
 - **Address is ≤ 21 characters.** It replaces `cluster.retroroyale.xyz` (21 bytes) in each `libg.so`; a longer value cannot fit. Defaults to this machine's LAN IP; change it on the **Config tab → Connect**.
 - The battle checksum patch targets specific offsets in the RetroRoyale-derived `libg.so`. On a base APK where those bytes differ, the patch is skipped with a warning rather than corrupting the binary.
 - The APK is signed with **v1 (JAR) signatures only** (needed for old-Android compatibility) and is not zipaligned; the retro client runs from anywhere, but release-store distribution should run `zipalign` afterwards.

@@ -78,6 +78,26 @@ router.post("/settings/address", wrap(async (req) => {
   return { ok: true, serverAddress: a };
 }));
 
+// ---- battle server (use_udp) toggle ----
+// The separate battle server only exists when use_udp=true. When it is turned
+// off, matches run on the main server over the clients' existing TCP connection
+// and the battle server process is not started (and any running one is stopped).
+router.post("/settings/battles", wrap(async (req) => {
+  const next = !!((req.body || {}).enabled);
+  const cur = config.readMain();
+  const was = !!cur.use_udp;
+  if (next === was) return { ok: true, enabled: next, changed: false };
+  cur.use_udp = next;
+  config.writeMain(cur);
+  if (!next) {
+    logs.log("app", "Battle server disabled (use_udp=false) — stopping the battle server; matches now run on the main server.");
+    await royale.stop("battles");
+  } else {
+    logs.log("app", "Battle server enabled (use_udp=true) — restart the server stack so the main server binds its cluster listener.");
+  }
+  return { ok: true, enabled: next, changed: true, requiresRestart: true };
+}));
+
 // ---- main server config (game knobs like trophy rewards) ----
 const CONFIG_NUMERIC = [
   "MinTrophies", "MaxTrophies", "DefaultGold", "DefaultGems", "DefaultLevel",

@@ -193,6 +193,15 @@
       <div class="muted" id="install-note"></div>
     </div>
     <div class="card">
+      <h2>Battle server</h2>
+      <div class="frow">
+        <label for="cfg-battles">Run matches on the separate battle server (use_udp)</label>
+        <input id="cfg-battles" type="checkbox">
+      </div>
+      <div class="muted">When <b>off</b> (default), the battle server is not started at all &mdash; matches run on the main server over each player's existing connection, which works from any network. When <b>on</b>, matches run on the separate <code>ClashRoyale.Battles</code> process over UDP 9449 &mdash; note that as of now the server hands clients a <i>loopback</i> address as the battle host, so real devices cannot reach it. Keep it <b>off</b> unless you are debugging that path.</div>
+      <div class="muted">Changes apply on the next server-stack restart. Disabling also stops the battle server process immediately.</div>
+    </div>
+    <div class="card">
       <div class="toolbar">
         <h2>Game rules</h2>
         <span class="spacer"></span>
