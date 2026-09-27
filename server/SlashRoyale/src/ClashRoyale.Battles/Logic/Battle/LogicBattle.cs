@@ -46,33 +46,58 @@ namespace ClashRoyale.Battles.Logic.Battle
         {
             try
             {
+                var battleEnded = true;
+
                 foreach (var ctx in Session.ToArray())
-                    if (ctx.Active)
+                {
+                    if (!ctx.Active) continue;
+
+                    if (DateTime.UtcNow.Subtract(ctx.LastCommands).TotalSeconds > 3)
                     {
-                        if (DateTime.UtcNow.Subtract(ctx.LastCommands).TotalSeconds > 3)
-                        {
-                            if (BattleSeconds <= 10) continue;
+                        if (BattleSeconds <= 10) continue;
 
-                            Replay.EndTick = BattleTime;
-
-                            await new BattleFinishedMessage
-                            {
-                                SessionId = Session.Id,
-                                Index = ctx.Index,
-                                ReplayJson = JsonConvert.SerializeObject(Replay)
-                            }.SendAsync();
-
-                            ctx.Session.Remove(ctx);
-                        }
-                        else
-                        {
-                            await new SectorHearbeatMessage(ctx)
-                            {
-                                Turn = BattleTime,
-                                Commands = GetOwnQueue(ctx.EndPoint)
-                            }.SendAsync();
-                        }
+                        // this player has stopped fighting; wait for the others too
                     }
+                    else
+                    {
+                        battleEnded = false;
+
+                        await new SectorHearbeatMessage(ctx)
+                        {
+                            Turn = BattleTime,
+                            Commands = GetOwnQueue(ctx.EndPoint)
+                        }.SendAsync();
+                    }
+                }
+
+                // Only resolve the battle once every player has stopped commanding.
+                // The battle result (win/loss) is not knowable from the protocol, so
+                // the main server treats every player as a winner; this message only
+                // triggers the result handling on the main server for this session.
+                if (battleEnded && BattleSeconds > 10)
+                {
+                    Replay.EndTick = BattleTime;
+
+                    // Any active player works: the result is not knowable from the
+                    // protocol and the main server treats every player as a winner.
+                    // This message only triggers the result handling on the main server.
+                    var player = Session.FirstOrDefault(ctx => ctx?.Active == true);
+
+                    if (player != null)
+                    {
+                        await new BattleFinishedMessage
+                        {
+                            SessionId = Session.Id,
+                            Index = player.Index,
+                            ReplayJson = JsonConvert.SerializeObject(Replay)
+                        }.SendAsync();
+                    }
+
+                    Session.Clear();
+                    Stop();
+
+                    return;
+                }
 
                 if (Session.FindIndex(s => s.BattleActive) <= -1)
                     Stop();

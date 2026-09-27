@@ -10,12 +10,17 @@ namespace ClashRoyale.Protocol.Messages.Server
             Id = 20225;
         }
 
+        public int Result { get; set; } = 1;
         public int TrophyReward { get; set; }
         public int OpponentTrophyReward { get; set; }
 
+        public const int Draw = 0;
+        public const int Win = 1;
+        public const int Lose = 2;
+
         public override void Encode()
         {
-            Writer.WriteVInt(1);
+            Writer.WriteVInt(Result);
             Writer.WriteVInt(TrophyReward); // Trophies (Own)
 
             Writer.WriteVInt(0);

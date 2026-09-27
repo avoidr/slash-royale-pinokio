@@ -858,21 +858,24 @@ namespace ClashRoyale.Logic.Battle
 
                             var rnd = new Random();
                             var trophies = IsFriendly || Is2V2 ? 0 : rnd.Next(MinTrophies, MaxTrophy);
-                            
+                            var gold = IsFriendly || Is2V2 ? 0 : GetBattleRewardGold(player);
+
                             if (!IsFriendly)
                             {
                                 bShouldSendEndMatch = true;
                                 Console.WriteLine("Given to" + player.Home.Name + " " + Resources.Configuration.gemsreward + " gems");
-                                Console.WriteLine("Given to" + player.Home.Name + " " + Resources.Configuration.goldreward + " golds");
+                                Console.WriteLine("Given to" + player.Home.Name + " " + gold + " golds");
                                 player.Home.Diamonds += Resources.Configuration.gemsreward;
-                                player.Home.Gold += Resources.Configuration.goldreward;
+                                player.Home.Gold += gold;
                                 player.Home.AddCrowns(10);
                                 player.Home.Arena.AddTrophies(trophies);
                             }
 
                             await new BattleResultMessage(player.Device)
                             {
-                                TrophyReward = trophies
+                                Result = BattleResultMessage.Win,
+                                TrophyReward = trophies,
+                                OpponentTrophyReward = 0
                             }.SendAsync();
 
                             Remove(player);
@@ -940,28 +943,68 @@ namespace ClashRoyale.Logic.Battle
 
             var player = this[index];
 
-            if (player == null) return;
+            if (player == null || Resolved) return;
+
+            Resolved = true;
 
             var rnd = new Random();
             var trophies = IsFriendly || Is2V2 ? 0 : rnd.Next(MinTrophies, MaxTrophy);
 
-            if (!IsFriendly)
+            foreach (var p in ToArray())
             {
-                player.Home.AddCrowns(3);
-                player.Home.Arena.AddTrophies(trophies);
+                if (p?.Device == null) continue;
+
+                if (!IsFriendly)
+                {
+                    p.Home.Diamonds += Resources.Configuration.gemsreward;
+                    p.Home.Gold += GetBattleRewardGold(p);
+                    p.Home.AddCrowns(3);
+                    p.Home.Arena.AddTrophies(trophies);
+                }
+
+                await new BattleResultMessage(p.Device)
+                {
+                    Result = BattleResultMessage.Win,
+                    TrophyReward = trophies,
+                    OpponentTrophyReward = 0
+                }.SendAsync();
+
+                p.Battle = null;
+                this[IndexOf(p)] = null;
             }
-
-            await new BattleResultMessage(player.Device)
-            {
-                TrophyReward = trophies
-            }.SendAsync();
-
-            player.Battle = null;
-            this[index] = null;
 
             if (this.All(x => x == null)) Stop();
 
             #endregion
+        }
+
+        /// <summary>
+        ///     Returns the victory gold granted after a battle. The win screen amount is
+        ///     computed client side from arenas.csv (BattleRewardGold). By default
+        ///     (GoldToGiveAfterMatch = 0) the exact same arena amount is granted so the
+        ///     display and the actual reward stay in sync. Setting GoldToGiveAfterMatch
+        ///     to a non-zero value overrides the arena amount with that fixed value.
+        /// </summary>
+        /// <param name="player"></param>
+        private int GetBattleRewardGold(Player player)
+        {
+            if (Resources.Configuration.goldreward != 0)
+                return Resources.Configuration.goldreward;
+
+            try
+            {
+                var arena = Csv.Tables.Get(Csv.Files.Arenas)
+                                 .GetDataWithInstanceId<Arenas>(player.Home.Arena.CurrentArena);
+
+                if (arena != null && arena.BattleRewardGold > 0)
+                    return arena.BattleRewardGold;
+            }
+            catch (Exception)
+            {
+                // fall through to zero
+            }
+
+            return 0;
         }
 
         #region CommandStorage 
@@ -1014,6 +1057,7 @@ namespace ClashRoyale.Logic.Battle
         private DateTime StartTime { get; set; }
         public bool Is2V2 { get; set; }
         public bool IsFriendly { get; set; }
+        public bool Resolved { get; set; }
         public int Arena { get; set; }
         public int Location { get; set; }
 

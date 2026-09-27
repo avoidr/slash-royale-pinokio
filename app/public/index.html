@@ -199,7 +199,7 @@
         <label for="cfg-battles">Run matches on the separate battle server (use_udp)</label>
         <input id="cfg-battles" type="checkbox">
       </div>
-      <div class="muted">When <b>off</b> (default), the battle server is not started at all &mdash; matches run on the main server over each player's existing connection, which works from any network. When <b>on</b>, matches run on the separate <code>ClashRoyale.Battles</code> process and clients are told to dial your <b>Connect address:9449</b> over <i>UDP</i> &mdash; so UDP 9449 must be forwarded to this machine just like TCP 9339 is.</div>
+      <div class="muted">Matches run on the separate <code>ClashRoyale.Battles</code> process. Turn off to run battles on the main server instead.</div>
       <div class="muted">Changes apply on the next server-stack restart. Disabling also stops the battle server process immediately.</div>
     </div>
     <div class="card">
@@ -217,7 +217,7 @@
       <div class="frow"><label for="cfg-DefaultGems">Default gems (new players)</label><input id="cfg-DefaultGems" type="number"></div>
       <div class="frow"><label for="cfg-DefaultLevel">Default tower level (new players)</label><input id="cfg-DefaultLevel" type="number"></div>
       <div class="frow"><label for="cfg-GemsToGiveAfterMatch">Gems after each match</label><input id="cfg-GemsToGiveAfterMatch" type="number"></div>
-      <div class="frow"><label for="cfg-GoldToGiveAfterMatch">Gold after each match</label><input id="cfg-GoldToGiveAfterMatch" type="number"></div>
+      <div class="frow"><label for="cfg-GoldToGiveAfterMatch" title="0 = grant the current arena's win gold (shown on the win screen); any other value overrides it with a fixed amount">Gold after each match (0 = arena value)</label><input id="cfg-GoldToGiveAfterMatch" type="number"></div>
       <div class="muted" id="cfg-meta"></div>
       <div class="frow"><span class="muted">Changes are written to the main server's <code>config.json</code>. Restart the server stack for them to take effect.</span></div>
     </div>

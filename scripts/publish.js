@@ -66,18 +66,19 @@ const defaultConfig = {
   DefaultGold: 1000,
   DefaultGems: 1000,
   DefaultLevel: 1,
-  // Battle server disabled by default: matches run on the main server over TCP.
-  // When enabled, the main server tells clients to reach the battle host at the
-  // configured server_address (Connect address) on UDP 9449, so that address must
-  // be reachable for remote players (UDP 9449 forwarded, like 9339).
-  use_udp: false,
+  // Battle server enabled by default: matches run on the separate
+  // ClashRoyale.Battles process, handed off over UDP 9449.
+  use_udp: true,
   BattleLog_WebhookUrl: "",
   PlayerLog_WebhookUrl: "",
   ServerLog_WebhookUrl: "",
   admins: [],
   banned_ids: [],
   GemsToGiveAfterMatch: 0,
-  GoldToGiveAfterMatch: 20,
+  // GoldToGiveAfterMatch: default 0 = grant the arena's BattleRewardGold
+  // (the same value the client shows on the win screen, e.g. 7 in Arena 2).
+  // Set a non-zero value to override with a fixed amount of gold per battle.
+  GoldToGiveAfterMatch: 0,
   ErrorLogWebhook: ""
 };
 
