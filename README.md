@@ -62,7 +62,7 @@ Start the server stack first. Lists every table in the game database with row co
 A no-raw-JSON way to administer accounts: list/filter every player (level, trophies, gold, gems, session count, admin/banned badges); rename, set level (1–13), trophies, gold, gems (trophy edits recompute the arena and the mirrored `Trophies` column); **Unlock all cards** / **Max all cards** (level 13); toggle **admin / banned** — written to the main server's `config.json` (`admins` / `banned_ids`, the same lists the `/admin` and `/ban` chat commands use), applied on the next **main-server restart**. Data edits apply on the player's next login; best done while the stack is stopped or the player is offline.
 
 ### Config tab
-- **Connect** – the server address baked into rebuilt APKs. Defaults to this machine's LAN IP; **Use local IP** fills it in automatically. It's written into the client the next time you build an APK.
+- **Connect** – the server address baked into rebuilt APKs. Defaults to this machine's LAN IP; **Use local IP** fills it in automatically (the default, for players on your network) and **Use public IP** asks an echo service for the address outside players must reach (only works if TCP 9339 is forwarded to this machine). It's written into the client the next time you build an APK.
 - **Battle server** – enables/disables the separate battle server (`use_udp` in the main server's `config.json`, written immediately). When **off** (default), no battle-server process is started and matches run on the main server over each player's existing connection — which works from any network. When **on**, matches run on the separate `ClashRoyale.Battles` process over UDP 9449 (note: currently the server hands clients a loopback battle address, so remote devices cannot reach it). Disabling stops the battle server process right away; both directions apply for sure on the next server-stack restart.
 - **Game rules** – edits the main server's `config.json` directly (restart the stack to apply). Out-of-the-box values: `MinTrophies` **25** / `MaxTrophies` **34** — the winner of a regular battle gets a random trophy value in that range (`Random.Next(Min, Max)`, so 25–33), while friendly and 2v2 battles always award 0; `DefaultGold` **1000**, `DefaultGems` **1000**, `DefaultLevel` **1**, `GemsToGiveAfterMatch` **0**, `GoldToGiveAfterMatch` **20**.
 
@@ -108,6 +108,10 @@ curl -X POST http://127.0.0.1:3000/api/settings/address \
   -H "Content-Type: application/json" \
   -d '{"address":"192.168.1.50"}'
 
+# look up the LAN IP or the public IP the echo service sees
+curl http://127.0.0.1:3000/api/settings/localip
+curl http://127.0.0.1:3000/api/settings/publicip
+
 # enable/disable the separate battle server (use_udp); off = matches run on the main server
 curl -X POST http://127.0.0.1:3000/api/settings/battles \
   -H "Content-Type: application/json" \
@@ -135,6 +139,7 @@ curl -N http://127.0.0.1:3000/api/logs/all/stream
 | GET | `/api/health` | liveness probe |
 | GET | `/api/status` | db / servers / toolchain / address / configs summary |
 | GET | `/api/settings/localip` | this machine's suggested LAN address |
+| GET | `/api/settings/publicip` | the machine's public IP as seen by an external echo service (`api.ipify.org`) |
 | POST | `/api/settings/address` | set the address baked into client APKs (`{address}`) |
 | POST | `/api/settings/battles` | enable/disable the battle server, `{enabled: bool}` → writes `use_udp`; disabling stops the battles process (returns `requiresRestart`) |
 | POST | `/api/stack/start` `/api/stack/stop` `/api/stack/restart` | one-click stack control |

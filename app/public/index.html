@@ -188,8 +188,9 @@
         <input id="conn-address" class="conn-input" type="text" placeholder="server address — e.g. 100.x.y.z or my.host.com" maxlength="23">
         <span class="conn">:9339</span>
         <button id="btn-local-ip" class="btn">Use local IP</button>
+        <button id="btn-public-ip" class="btn">Use public IP</button>
       </div>
-      <div class="muted" id="conn-hint">This address is baked into the client APK the next time you build one (APK Builder → Build patched APK).</div>
+      <div class="muted" id="conn-hint">This address is baked into the client APK the next time you build one (APK Builder → Build patched APK). Local IP (default) reaches players on your network; Public IP is what players outside your network must be patched with, and only works if port 9339 is forwarded to this machine.</div>
       <div class="muted" id="install-note"></div>
     </div>
     <div class="card">

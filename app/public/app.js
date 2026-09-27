@@ -92,6 +92,8 @@ function renderStatus() {
   const conn = st.settings && st.settings.serverAddress;
   const addrInput = $("conn-address");
   if (document.activeElement !== addrInput) addrInput.value = conn || "";
+  const apkAddr = $("apk-address");
+  if (apkAddr && apkAddr.value !== (conn || "")) apkAddr.value = conn || "";
 
   const inst = st.installed || {};
   const missing = [];
@@ -195,6 +197,24 @@ $("btn-local-ip").addEventListener("click", async () => {
     await saveServerAddress();
   } catch (e) {
     toast(e.message);
+  }
+});
+
+$("btn-public-ip").addEventListener("click", async () => {
+  const btn = $("btn-public-ip");
+  btn.disabled = true;
+  try {
+    const j = await getJSON("/api/settings/publicip");
+    if (j.ok === false) {
+      toast(j.error || "failed to detect public IP");
+      return;
+    }
+    $("conn-address").value = j.address;
+    await saveServerAddress();
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    btn.disabled = false;
   }
 });
 

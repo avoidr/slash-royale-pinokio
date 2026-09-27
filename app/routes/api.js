@@ -1,5 +1,6 @@
 "use strict";
 
+const https = require("https");
 const express = require("express");
 const { p } = require("../lib/paths");
 const settings = require("../lib/settings");
@@ -67,6 +68,40 @@ router.get("/status", wrap(async () => {
 
 // ---- server address (baked into the client APK) ----
 router.get("/settings/localip", wrap(async () => ({ ok: true, address: settings.localIp() })));
+
+// Public IP is only knowable from the outside: ask an echo service "what IP do
+// you see me as?". That value is what remote players must be able to reach, so it
+// is what gets baked into the APK when the user hits "Use public IP".
+function fetchPublicIp(timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      { host: "api.ipify.org", path: "/", timeout: timeoutMs, headers: { accept: "text/plain" } },
+      (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`IP echo service returned HTTP ${res.statusCode}`));
+        }
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          body += chunk;
+          if (body.length > 64) req.destroy(new Error("Unexpected response from the IP echo service."));
+        });
+        res.on("end", () => {
+          const ip = body.trim();
+          if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+            return reject(new Error(`IP echo service returned an unexpected value: ${ip.slice(0, 32)}`));
+          }
+          resolve(ip);
+        });
+      }
+    );
+    req.on("timeout", () => req.destroy(new Error("Timed out contacting the IP echo service.")));
+    req.on("error", (e) => reject(e));
+  });
+}
+
+router.get("/settings/publicip", wrap(async () => ({ ok: true, address: await fetchPublicIp() })));
 
 router.post("/settings/address", wrap(async (req) => {
   const { address } = req.body || {};
