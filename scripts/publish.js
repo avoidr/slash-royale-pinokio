@@ -67,8 +67,9 @@ const defaultConfig = {
   DefaultGems: 1000,
   DefaultLevel: 1,
   // Battle server disabled by default: matches run on the main server over TCP.
-  // The UDP battle-server path is currently unusable for remote devices (it hands
-  // the client a loopback IP as the battle host), so new installs default to off.
+  // When enabled, the main server tells clients to reach the battle host at the
+  // configured server_address (Connect address) on UDP 9449, so that address must
+  // be reachable for remote players (UDP 9449 forwarded, like 9339).
   use_udp: false,
   BattleLog_WebhookUrl: "",
   PlayerLog_WebhookUrl: "",

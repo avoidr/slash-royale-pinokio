@@ -133,7 +133,9 @@ namespace ClashRoyale.Logic.Battle
                         await new UdpConnectionInfoMessage(player.Device)
                         {
                             ServerPort = server.Port,
-                            ServerHost = server.Ip,
+                            ServerHost = !string.IsNullOrEmpty(Resources.Configuration.ServerAddress)
+                                ? Resources.Configuration.ServerAddress
+                                : server.Ip,
                             SessionId = BattleId,
                             Nonce = server.Nonce,
                             Index = (byte)IndexOf(player)

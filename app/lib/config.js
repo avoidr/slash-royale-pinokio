@@ -85,7 +85,14 @@ function ensureMainConfig() {
   if (!exists(mainFile())) {
     fs.writeFileSync(mainFile(), JSON.stringify(buildMain(), null, 2));
   }
-  return readJson(mainFile(), buildMain());
+  const cfg = readJson(mainFile(), buildMain());
+  // Backfill the client-reachable host so the UDP battle path never advertises a
+  // loopback/empty host on configs that predate the server_address field.
+  if (!cfg.server_address) {
+    cfg.server_address = settings.get().serverAddress;
+    fs.writeFileSync(mainFile(), JSON.stringify(cfg, null, 2));
+  }
+  return cfg;
 }
 
 function ensureBattlesConfig() {
@@ -96,7 +103,12 @@ function ensureBattlesConfig() {
 }
 
 function readMain() {
-  return readJson(mainFile(), buildMain());
+  const cfg = readJson(mainFile(), buildMain());
+  // The client-reachable host lives in the panel settings; keep it in the main
+  // server config so the UDP battle path advertises a reachable host (falling
+  // back to the node's own address when the key is missing).
+  if (!cfg.server_address) cfg.server_address = settings.get().serverAddress;
+  return cfg;
 }
 
 function readBattles() {

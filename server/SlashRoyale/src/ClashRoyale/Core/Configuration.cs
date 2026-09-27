@@ -38,6 +38,7 @@ namespace ClashRoyale.Core
         [JsonProperty("patch_url")] public string PatchUrl = "";
         [JsonProperty("sentry_api")] public string SentryApiUrl = "";
         [JsonProperty("server_port")] public int ServerPort = 9339;
+        [JsonProperty("server_address")] public string ServerAddress = "";
         [JsonProperty("update_url")] public string UpdateUrl = "https://github.com/retroroyale/ClashRoyale";
         [JsonProperty("use_content_patch")] public bool UseContentPatch;
         [JsonProperty("MinTrophies")] public int MinTroph = 25;
@@ -81,6 +82,7 @@ namespace ClashRoyale.Core
                     UseContentPatch = config.UseContentPatch;
 
                     ServerPort = config.ServerPort;
+                    ServerAddress = config.ServerAddress;
                     UpdateUrl = config.UpdateUrl;
 
                     UseUdp = config.UseUdp;

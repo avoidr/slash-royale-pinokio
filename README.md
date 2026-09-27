@@ -27,7 +27,7 @@ Ports (fixed by the server code):
 - **3306** – MariaDB (the server connection setting has no port option, so MariaDB must stay here)
 - **3000** – admin panel
 
-> **Battle server is off by default.** With `use_udp: false` there is no battle-server process and no cluster listener at all — battles run on the **main server** over each player's existing 9339 connection, which works from any network (the UDP path hands the client a *loopback* address as the battle host, so remote devices cannot reach it). Turn it on under **Config tab → Battle server** only if you are debugging that path.
+> **Battle server is off by default.** With `use_udp: false` there is no battle-server process and no cluster listener at all — battles run on the **main server** over each player's existing 9339 connection, which works from any network. Turn it on under **Config tab → Battle server** if you want matches served by the separate `ClashRoyale.Battles` process: the main server then hands each client your **Connect address:9449** to reach it over *UDP*, so **UDP 9449** must be forwarded to this machine just like TCP 9339 is.
 
 ## Getting started
 
@@ -63,7 +63,7 @@ A no-raw-JSON way to administer accounts: list/filter every player (level, troph
 
 ### Config tab
 - **Connect** – the server address baked into rebuilt APKs. Defaults to this machine's LAN IP; **Use local IP** fills it in automatically (the default, for players on your network) and **Use public IP** asks an echo service for the address outside players must reach (only works if TCP 9339 is forwarded to this machine). It's written into the client the next time you build an APK.
-- **Battle server** – enables/disables the separate battle server (`use_udp` in the main server's `config.json`, written immediately). When **off** (default), no battle-server process is started and matches run on the main server over each player's existing connection — which works from any network. When **on**, matches run on the separate `ClashRoyale.Battles` process over UDP 9449 (note: currently the server hands clients a loopback battle address, so remote devices cannot reach it). Disabling stops the battle server process right away; both directions apply for sure on the next server-stack restart.
+- **Battle server** – enables/disables the separate battle server (`use_udp` in the main server's `config.json`, written immediately). When **off** (default), no battle-server process is started and matches run on the main server over each player's existing connection — which works from any network. When **on**, matches run on the separate `ClashRoyale.Battles` process, and the main server tells clients to dial the battle host at your **Connect address:9449** over *UDP* (so UDP 9449 must be forwarded to this machine, like TCP 9339). Disabling stops the battle server process right away; both directions apply for sure on the next server-stack restart.
 - **Game rules** – edits the main server's `config.json` directly (restart the stack to apply). Out-of-the-box values: `MinTrophies` **25** / `MaxTrophies` **34** — the winner of a regular battle gets a random trophy value in that range (`Random.Next(Min, Max)`, so 25–33), while friendly and 2v2 battles always award 0; `DefaultGold` **1000**, `DefaultGems` **1000**, `DefaultLevel` **1**, `GemsToGiveAfterMatch` **0**, `GoldToGiveAfterMatch` **20**.
 
 ## Building the client APK
@@ -169,7 +169,7 @@ curl -N http://127.0.0.1:3000/api/logs/all/stream
 ## Notes & limitations
 
 - **MariaDB occupies 3306.** If a system MySQL/MariaDB already listens there, the panel refuses to start its own instance instead of fighting it. Move the other service to a different port.
-- **The separate battle server (UDP) is not usable from real devices.** When `use_udp: true` the main server tells clients to reach the battle host at `127.0.0.1:9449` (the node registers with its loopback address), so any device other than the server itself freezes ~3 s into a battle. The setting defaults to **off** so matches run on the main server over TCP instead; keep it off unless you are debugging the UDP path.
+- **Battle server (UDP) needs its own forwarding.** When `use_udp: true` the main server hands clients your Connect address on **UDP 9449**, so besides TCP 9339 you must forward UDP 9449 to this machine (and the battle server binds `0.0.0.0`, which it does). Until that port is reachable, remote devices freeze ~3 s into a battle. The setting still defaults to **off** so matches run on the main server over TCP instead.
 - **Address is ≤ 21 characters.** It replaces `cluster.retroroyale.xyz` (21 bytes) in each `libg.so`; a longer value cannot fit. Defaults to this machine's LAN IP; change it on the **Config tab → Connect**.
 - The battle checksum patch targets specific offsets in the RetroRoyale-derived `libg.so`. On a base APK where those bytes differ, the patch is skipped with a warning rather than corrupting the binary.
 - The APK is signed with **v1 (JAR) signatures only** (needed for old-Android compatibility) and is not zipaligned; the retro client runs from anywhere, but release-store distribution should run `zipalign` afterwards.
