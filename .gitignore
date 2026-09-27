@@ -23,4 +23,7 @@ venv
 /app/assets/*.apk
 /app/assets/*.part
 /app/node_modules/
+# npm regenerates the lockfile per machine/npm version during install/update;
+# tracking it only causes git-pull aborts on user edits, so keep it untracked
+/app/package-lock.json
 nul
