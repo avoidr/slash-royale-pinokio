@@ -543,6 +543,8 @@ async function bakeGamefiles(stage) {
     const batch = [];
     for (const f of fs.readdirSync(srvDir)) {
       if (!f.toLowerCase().endsWith(".csv")) continue;
+      const rel = `${set.srv}/${f}`;
+      if (gamefiles.isIgnoredFile(rel)) continue;
       const apkFile = path.join(apkDir, f);
       if (!exists(apkFile)) continue;
       const clientText = client[f];
@@ -573,6 +575,8 @@ async function bakeGamefiles(stage) {
 }
 
 async function build(opts = {}) {
+  // start each build from a clean apk view (in-memory only; on-disk log kept)
+  logs.clearBuffer("apk");
   const s = settings.get();
   const address = opts.address !== undefined ? opts.address : s.serverAddress || "";
   if (opts.address !== undefined) s.serverAddress = address;
@@ -616,7 +620,8 @@ async function build(opts = {}) {
       const baked = await bakeGamefiles(stage);
       report.csv = { baked };
       if (baked.length) {
-        logs.log("apk", `Baked ${baked.length} edited game CSVs into the client.`);
+        logs.log("apk", `Baked ${baked.length} edited game CSV${baked.length === 1 ? "" : "s"} into the client:`);
+        for (const f of baked) logs.log("apk", `  ${f}`);
       } else {
         logs.log("apk", "No editable game CSVs found to bake into the client.");
       }

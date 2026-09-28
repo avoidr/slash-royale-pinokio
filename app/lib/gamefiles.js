@@ -5,6 +5,15 @@ const path = require("path");
 const { p, exists } = require("./paths");
 const logs = require("./logs");
 
+// CSVs that must never be baked into the client APK. Files in this category
+// remain editable in the panel (and in the running server's data), but the
+// APK builder skips them, so the client keeps the retail entry.
+const IGNORED_FILES = new Set(["csv_client/billing_packages.csv"]);
+
+function isIgnoredFile(rel) {
+  return IGNORED_FILES.has(String(rel || "").replace(/\\/g, "/"));
+}
+
 function csvList(sub = "csv_logic") {
   const dir = path.join(p.gameAssets, sub);
   if (!exists(dir)) return [];
@@ -13,6 +22,18 @@ function csvList(sub = "csv_logic") {
     .filter((f) => f.toLowerCase().endsWith(".csv"))
     .sort()
     .map((f) => ({ file: `${sub}/${f}`, name: f.replace(/\.csv$/i, "") }));
+}
+
+// csv_logic + csv_client lists, with ignored files split into their own group.
+function csvGroups() {
+  const groups = { csv_logic: [], csv_client: [], csv_ignored: [] };
+  for (const sub of ["csv_logic", "csv_client"]) {
+    for (const item of csvList(sub)) {
+      if (isIgnoredFile(item.file)) groups.csv_ignored.push(item);
+      else groups[sub].push(item);
+    }
+  }
+  return groups;
 }
 
 function csvPath(rel) {
@@ -158,4 +179,4 @@ function pristineVsPublishDiff() {
   return diffFiles;
 }
 
-module.exports = { csvList, readCsv, writeCsv, restoreAll, pristineVsPublishDiff, parseCsv, serializeCsv };
+module.exports = { csvList, csvGroups, isIgnoredFile, readCsv, writeCsv, restoreAll, pristineVsPublishDiff, parseCsv, serializeCsv };

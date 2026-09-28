@@ -237,6 +237,9 @@ router.post("/stack/restart", wrap(async () => {
   if (["starting", "stopping"].includes(stackState)) throw new Error("A stack operation is already in progress.");
   stackState = "starting";
   try {
+    // restart clears the panel view only; on-disk logs from the previous run
+    // are kept for debugging (only /stack/start wipes the log files too)
+    logs.clearView();
     logs.log("app", "=== Restarting server stack (stop all, then database -> main -> battles) ===");
     await royale.stop("battles");
     await royale.stop("main");
@@ -331,9 +334,8 @@ router.post("/dbview/update", wrap(async (req) => {
 
 // ---- game data ----
 router.get("/gamefiles", (req, res) => {
-  const logic = gamefiles.csvList("csv_logic");
-  const client = gamefiles.csvList("csv_client");
-  res.json({ ok: true, csv_logic: logic, csv_client: client });
+  const groups = gamefiles.csvGroups();
+  res.json({ ok: true, ...groups });
 });
 
 router.post("/gamefiles/restore", wrap(async () => {
@@ -414,7 +416,7 @@ router.get("/logs/all/stream", (req, res) => {
     for (const line of logs.history(name)) send({ type: "line", source: name, line });
   }
   const onLine = (name, line) => send({ type: "line", source: name, line });
-  const onClear = () => send({ type: "clear" });
+  const onClear = (name) => send({ type: "clear", source: name || null });
   logs.on("line", onLine);
   logs.on("clear", onClear);
   const heartbeat = setInterval(() => send({ type: "ping" }), 25000);

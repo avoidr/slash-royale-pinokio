@@ -104,6 +104,24 @@ class Logs extends EventEmitter {
     this.emit("clear");
   }
 
+  // Clear every source's in-memory buffer so the panel shows a fresh window,
+  // but leave the log FILES intact: restart should not destroy the previous
+  // run's on-disk logs that are still useful for debugging. Emits unscoped.
+  clearView() {
+    for (const [name] of this.buffers) {
+      this.buffers.set(name, { max: 2000, lines: [] });
+    }
+    this.emit("clear");
+  }
+
+  // Clear one source's in-memory buffer only (files untouched) and emit a
+  // scoped "clear" event so subscribers can wipe just that window (e.g. the
+  // APK builder before each build). On-disk logs are preserved.
+  clearBuffer(name) {
+    this.buffers.set(name, { max: 2000, lines: [] });
+    this.emit("clear", name);
+  }
+
   history(name) {
     return this._buf(name).lines;
   }

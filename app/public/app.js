@@ -225,6 +225,7 @@ async function loadFileList() {
   const groups = [
     ["csv_logic", "Game data (csv_logic)"],
     ["csv_client", "Client data (csv_client)"],
+    ["csv_ignored", "Ignored files"],
   ];
   for (const [key, label] of groups) {
     const list = j[key] || [];
@@ -985,9 +986,20 @@ function connectLogs() {
   es.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.type === "clear") {
+      if (m.source) {
+        // scoped clear from the server (e.g. APK builder reset): wipe that
+        // source's own window only, not the whole live-log view
+        if (m.source === "apk") {
+          $("apk-log").textContent = "";
+          $("apk-output").innerHTML = "";
+        }
+        logCap.delete(m.source);
+        logSeen.delete(m.source);
+        return;
+      }
       logCap.clear();
       logSeen.clear();
-      setApkLog("");
+      $("apk-log").textContent = "";
       renderLogs();
       return;
     }
