@@ -71,14 +71,30 @@ function catalogOf() {
   ];
   const out = [];
   for (const { file, classId } of files) {
+    let headers = [];
     let data = [];
     try {
-      data = gamefiles.readCsv(`csv_logic/${file}.csv`).data;
-    } catch (e) {}
+      const csv = gamefiles.readCsv(`csv_logic/${file}.csv`);
+      headers = Array.isArray(csv.headers) ? csv.headers : [];
+      data = Array.isArray(csv.data) ? csv.data : [];
+} catch (e) {}
+    const rarityCol = headers.indexOf("Rarity");
+    // Debug/placeholder rows (NotInUse="TRUE") are not real cards and must not be
+    // added to a deck, but they still occupy an instance slot in the server's
+    // card list, so the counter advances for every row regardless.
+    const notInUseCol = headers.indexOf("NotInUse");
     let inst = 0;
     for (const r of data) {
       if (!r[0] || !String(r[0]).trim()) continue;
-      out.push({ ClassId: classId, InstanceId: inst, Name: String(r[0]).trim() });
+      const notInUse = notInUseCol > -1 && String(r[notInUseCol] || "").trim().toUpperCase() === "TRUE";
+      if (!notInUse) {
+        out.push({
+          ClassId: classId,
+          InstanceId: inst,
+          Name: String(r[0]).trim(),
+          Rarity: rarityCol > -1 ? String(r[rarityCol] || "").trim() : "",
+        });
+      }
       inst++;
     }
   }
@@ -214,6 +230,37 @@ async function patch(id, p) {
   }
 }
 
+// Per-rarity caps come from rarities.csv. LevelCount is the total number of levels
+// the rarity has (Common 13, Rare 11, Epic 8, Legendary 5) — the highest level the
+// client displays. The PowerLevelMultiplier array is indexed by the *stored* card
+// level (0-based, so a stored 12 renders as "13"), which is why the max stored
+// level is LevelCount - 1. Writing a stored level >= LevelCount makes the lookup
+// miss and the card renders with 0 hitpoints.
+function rarityMaxLevels() {
+  if (rarityMaxLevels.cache) return rarityMaxLevels.cache;
+  const out = {};
+  try {
+    const { headers, data } = gamefiles.readCsv("csv_logic/rarities.csv");
+    const nameCol = headers.indexOf("Name");
+    const countCol = headers.indexOf("LevelCount");
+    if (nameCol > -1 && countCol > -1) {
+      for (const r of data) {
+        const name = String(r[nameCol] || "").trim();
+        const count = num(r[countCol], 0);
+        if (name && count > 0) out[name] = count;
+      }
+    }
+  } catch (e) {}
+  rarityMaxLevels.cache = out;
+  return out;
+}
+
+function maxLevelForRarity(rarity) {
+  const lv = rarityMaxLevels()[String(rarity || "").trim()];
+  // Number of levels -> max stored level (0-based), so subtract one.
+  return Number.isFinite(lv) && lv > 0 ? lv - 1 : 12;
+}
+
 async function setCards(id, action) {
   if (action !== "unlock" && action !== "max") throw new Error(`Unknown action: ${action}`);
   const conn = await getPool().getConnection();
@@ -230,9 +277,12 @@ async function setCards(id, action) {
         card = { ClassId: c.ClassId, InstanceId: c.InstanceId, Count: 0, Level: 0, IsNew: false };
         deck.push(card);
       }
-      if (action === "max") card.Level = 13;
+      if (action === "max") card.Level = maxLevelForRarity(c.Rarity);
     }
-    home.deck = deck;
+    // Drop any cards that are not in the real card catalog (e.g. debug/NotInUse
+    // rows previously written by the panel), so a corrupted inventory heals.
+    const valid = new Set(catalog.map((c) => `${c.ClassId}:${c.InstanceId}`));
+    home.deck = deck.filter((d) => valid.has(`${num(d.ClassId, -1)}:${num(d.InstanceId, -1)}`));
     await conn.query("UPDATE `player` SET `Home` = ? WHERE `Id` = ?", [wrapHome(home), Number(id)]);
     logs.log("app", `Player ${id}: ${action === "max" ? "maxed" : "unlocked"} all ${catalog.length} cards.`);
     requestReload(id);
