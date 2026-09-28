@@ -341,9 +341,11 @@ async function signApk(apkFile, keystore) {
  *
  * Only files that are genuine, faithful edits get baked into the client:
  *   - the client's own copy must decode with the identical schema
- *     (header row, type row, per-row column count, total row count - a
- *     stale or reduced server CSV such as upstream's `skins.csv`, which
- *     ships with fewer rows than the retail client, is never baked);
+ *     (header row, type row, per-row column count, and the server copy must
+ *     not have fewer rows than the retail client — a stale or reduced server
+ *     CSV such as upstream's `skins.csv`, which ships with fewer rows than
+ *     the retail client, is never baked; adding rows is allowed, so extra
+ *     data such as new card levels can be baked in);
  *   - the server copy must be free of embedded CR/LF/NUL bytes (this
  *     rejects rows such as the corrupted `USE_STAGGERED_...` value that
  *     upstream ships in `globals.csv`);
@@ -458,19 +460,25 @@ function arraysEqual(a, b) {
   return true;
 }
 
-// Same number of rows, same header row, same type row, and every row has
-// the same number of columns in both files.
+// Same header row, same type row, and every row has the same number of
+// columns in both files. The server copy may never drop rows the client has
+// (a stale/reduced CSV such as upstream's `skins.csv` is never baked), but it
+// may legitimately add rows (e.g. extra card levels), which the data-driven
+// client can consume.
 function schemaMatches(a, b) {
-  if (!a.length || !b.length || a.length !== b.length) return false;
+  if (!a.length || !b.length || b.length < a.length) return false;
   if (!arraysEqual(a[0], b[0])) return false;
   if (!arraysEqual(a[1], b[1])) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i].length !== b[i].length) return false;
+  const width = b[0].length;
+  for (let i = 0; i < b.length; i++) {
+    if (b[i].length !== width) return false;
+    if (i < a.length && a[i].length !== width) return false;
   }
   return true;
 }
 
 function differs(a, b) {
+  if (a.length !== b.length) return true;
   for (let i = 0; i < a.length; i++) {
     if (!arraysEqual(a[i], b[i])) return true;
   }
