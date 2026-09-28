@@ -67,6 +67,11 @@
         <button id="btn-restore" class="btn danger">Restore pristine data</button>
       </div>
       <div class="muted" id="csv-meta"></div>
+      <div class="csv-actions">
+        <button id="btn-csv-clone" class="btn" disabled title="Insert a copy of the selected row right below it">Clone row</button>
+        <button id="btn-csv-delete" class="btn danger" disabled title="Delete the selected row">Delete row</button>
+        <span class="muted" id="csv-sel-hint">Click a cell to select its row, then clone or delete it.</span>
+      </div>
       <div class="table-wrap"><table id="cvtable"><thead></thead><tbody></tbody></table></div>
     </div>
   </section>

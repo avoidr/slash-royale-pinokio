@@ -262,6 +262,14 @@ function selectCsvRow(ri) {
     r.classList.toggle("sel", Number(r.getAttribute("data-r")) === ri);
   }
   updateCsvMeta();
+  updateCsvRowActions();
+}
+
+function updateCsvRowActions() {
+  const c = state.csv;
+  const hasSel = !!(c && Number.isInteger(c.sel) && c.sel >= 0 && c.sel < c.data.length);
+  $("btn-csv-clone").disabled = !hasSel;
+  $("btn-csv-delete").disabled = !hasSel;
 }
 
 function renderCsv() {
@@ -299,7 +307,25 @@ function renderCsv() {
     const rows = tbody.children;
     if (rows[c.sel]) rows[c.sel].classList.add("sel");
   }
+  updateCsvRowActions();
 }
+
+$("btn-csv-clone").addEventListener("click", () => {
+  const c = state.csv;
+  if (!c || !Number.isInteger(c.sel) || c.sel < 0 || c.sel >= c.data.length) return;
+  const clone = c.data[c.sel].slice();
+  c.data.splice(c.sel + 1, 0, clone);
+  c.sel = c.sel + 1;
+  renderCsv();
+});
+
+$("btn-csv-delete").addEventListener("click", () => {
+  const c = state.csv;
+  if (!c || !Number.isInteger(c.sel) || c.sel < 0 || c.sel >= c.data.length) return;
+  c.data.splice(c.sel, 1);
+  c.sel = c.data.length > 0 ? Math.min(c.sel, c.data.length - 1) : null;
+  renderCsv();
+});
 
 $("btn-load").addEventListener("click", async () => {
   const file = $("cfiles").value;
