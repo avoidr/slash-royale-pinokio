@@ -78,6 +78,8 @@ function renderStatus() {
   const dbUp = !!(db && (db.ready || db.running));
   const anyUp = mainRunning || battlesRunning || dbUp;
 
+  if (st.version) $("head-version").textContent = "v" + st.version;
+
   pill("db", dbUp, "Database");
   pill("main", mainRunning, "Main server");
   pill("battles", battlesEnabled && battlesRunning, battlesEnabled ? "Battle server" : "Battle server (disabled)");
@@ -1080,6 +1082,86 @@ function connectLogs() {
   es.onerror = () => setTimeout(() => { try { es.close(); } catch (e) {} connectLogs(); }, 3000);
 }
 
+/* ---------------- update check ---------------- */
+let updateState = { busy: false, available: null };
+
+function setUpdateIndicator(state, label, title) {
+  const dot = $("update-dot");
+  dot.className = "updot" + (state ? " " + state : "");
+  $("update-label").textContent = label;
+  $("head-update").title = title || "Update status";
+}
+
+function showUpdatePopup(j) {
+  const inst = "v" + (j.version || "?");
+  $("up-installed").textContent = j.installed && j.installed.short ? inst + " (" + j.installed.short + ")" : inst;
+  $("up-latest").textContent = (j.latest && j.latest.short ? j.latest.short : "?");
+  const cnt = j.ahead || (j.commits ? j.commits.length : 0);
+  $("up-count").textContent = cnt === 1
+    ? "1 commit ahead of your install."
+    : cnt + " commits ahead of your install.";
+  const box = $("up-changes");
+  box.innerHTML = "";
+  const list = j.commits || [];
+  for (const c of list.slice(0, 12)) {
+    const row = document.createElement("div");
+    row.className = "up-commit";
+    const sha = document.createElement("span");
+    sha.className = "uc-sha";
+    sha.textContent = c.short;
+    const msg = document.createElement("span");
+    msg.className = "uc-msg";
+    msg.textContent = c.message || "";
+    const date = document.createElement("span");
+    date.className = "uc-date";
+    date.textContent = c.date ? fmtDate(c.date) : "";
+    row.appendChild(sha);
+    row.appendChild(msg);
+    row.appendChild(date);
+    box.appendChild(row);
+  }
+  $("update-overlay").hidden = false;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString();
+}
+
+async function checkForUpdates(force) {
+  if (updateState.busy) return;
+  updateState.busy = true;
+  $("btn-update-check").disabled = true;
+  setUpdateIndicator("", "Checking…", "Checking GitHub for updates…");
+  try {
+    const j = await getJSON("/api/update/check" + (force ? "?force=1" : ""));
+    if (j.available === true) {
+      updateState.available = true;
+      setUpdateIndicator("warn", "Update available", (j.ahead || (j.commits ? j.commits.length : 0)) + " commits ahead");
+      showUpdatePopup(j);
+    } else if (j.available === false) {
+      updateState.available = false;
+      setUpdateIndicator("on", "Up to date", "You are running the latest version.");
+      if (force) toast("Up to date.");
+    } else {
+      updateState.available = null;
+      setUpdateIndicator("err", "Check failed", j.error || "Could not check for updates.");
+    }
+  } catch (e) {
+    updateState.available = null;
+    setUpdateIndicator("err", "Check failed", e.message);
+  } finally {
+    updateState.busy = false;
+    $("btn-update-check").disabled = false;
+  }
+}
+
+$("btn-update-check").addEventListener("click", () => checkForUpdates(true));
+$("btn-update-dismiss").addEventListener("click", () => {
+  $("update-overlay").hidden = true;
+});
+
 /* ---------------- boot ---------------- */
 (async function boot() {
   try {
@@ -1108,6 +1190,7 @@ function connectLogs() {
   } catch (e) {
     console.error(e);
   }
+  checkForUpdates(false);
   await refreshStatus();
   setInterval(refreshStatus, 3000);
 })();

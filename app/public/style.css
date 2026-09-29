@@ -45,10 +45,24 @@ header {
 }
 .logo { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
 .logo svg { display: block; filter: drop-shadow(0 0 6px rgba(242, 201, 76, 0.25)); }
-.head-title { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; flex: 1; }
+.head-main { flex: 1; min-width: 0; }
+.head-title { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+.head-version { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 6px; letter-spacing: 0.5px; }
+.head-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.head-update {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted); white-space: nowrap;
+}
 .head-status { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 .head-status.on { color: var(--green); }
 .head-status.off { color: var(--red); }
+
+/* ---- update indicator ---- */
+.updot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: #4a5470; }
+.updot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.updot.warn { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+.updot.err { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.btn-mini { padding: 4px 10px; font-size: 12px; }
 
 #tabs { display: flex; gap: 4px; padding: 10px 24px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 #tabs .tab {
@@ -177,6 +191,39 @@ td[contenteditable]:hover, td[contenteditable]:focus { outline: 1px dashed var(-
 }
 .pbar-fill { height: 100%; width: 0; background: var(--gold); transition: width 0.2s; }
 #apk-dl-status { margin-top: 8px; }
+
+/* ---- update available overlay ---- */
+#update-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(6, 10, 20, 0.85);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+#update-overlay[hidden] { display: none; }
+.update-card {
+  width: 540px; max-width: 100%;
+  background: var(--card); border: 1px solid var(--gold2); border-radius: 14px;
+  padding: 22px; box-shadow: 0 12px 44px rgba(0, 0, 0, 0.6);
+}
+.update-title { font-size: 16px; font-weight: 700; color: var(--gold); margin-bottom: 10px; }
+.upd-warn-dot {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); box-shadow: 0 0 8px var(--gold); margin-left: 6px;
+}
+.update-body { color: var(--text); font-size: 13px; line-height: 1.55; margin-bottom: 16px; }
+.update-body p { margin: 4px 0; }
+.update-changes {
+  max-height: 220px; overflow: auto; margin: 10px 0;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+  font-size: 12px;
+}
+.update-changes .up-commit {
+  padding: 5px 4px; border-bottom: 1px solid var(--line);
+}
+.update-changes .up-commit:last-child { border-bottom: none; }
+.up-commit .uc-sha { color: var(--gold); font-family: var(--mono); margin-right: 7px; }
+.up-commit .uc-msg { color: var(--text); }
+.up-commit .uc-date { color: var(--muted); margin-left: 7px; font-size: 11px; }
 
 /* ---- database tab ---- */
 .db-grid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }

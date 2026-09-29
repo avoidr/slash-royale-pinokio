@@ -144,6 +144,7 @@ curl -N http://127.0.0.1:3000/api/logs/all/stream
 | POST | `/api/settings/battles` | enable/disable the battle server, `{enabled: bool}` → writes `use_udp`; disabling stops the battles process (returns `requiresRestart`) |
 | POST | `/api/stack/start` `/api/stack/stop` `/api/stack/restart` | one-click stack control |
 | GET | `/api/stack/status` | current stack state |
+| GET | `/api/update/check` | check GitHub for newer versions (`?force=1` bypasses the 5-min cache) |
 | POST | `/api/db/start` `/api/db/stop` | database lifecycle (low-level) |
 | GET | `/api/db/status` | database status (low-level) |
 | POST | `/api/server/:name/:action` | `main`/`battles` × `start`/`stop`/`restart` (low-level) |

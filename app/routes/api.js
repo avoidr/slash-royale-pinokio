@@ -11,6 +11,7 @@ const gamefiles = require("../lib/gamefiles");
 const apk = require("../lib/apk");
 const logs = require("../lib/logs");
 const dbview = require("../lib/dbview");
+const update = require("../lib/update");
 const activity = require("../lib/activity");
 const players = require("../lib/players");
 
@@ -59,6 +60,7 @@ router.get("/status", wrap(async () => {
       clone: require("fs").existsSync(p.cloneDir),
     },
     settings: { serverAddress: settings.get().serverAddress },
+    version: update.VERSION,
     configs: {
       main: safe(() => (config.existsMain() ? config.readMain() : null)),
       battles: safe(() => (config.existsBattles() ? config.readBattles() : null)),
@@ -265,6 +267,13 @@ router.get("/stack/status", wrap(async () => {
   const s = await royale.status();
   const d = await db.status();
   return { ok: true, stack: stackState, db: d, servers: s };
+}));
+
+// ---- update check ----
+router.get("/update/check", wrap(async (req) => {
+  const force = !!(req.query && req.query.force);
+  const r = await update.check(force);
+  return { ...r };
 }));
 
 // ---- low-level endpoints (used by the stack; also available for scripting) ----

@@ -30,8 +30,8 @@ const port = parseInt(process.env.PANEL_PORT, 10) || settings.get().panelPort ||
 const server = http.createServer(app);
 
 server.listen(port, "127.0.0.1", () => {
-  logs.log("app", `Clash Royale PS admin panel ready on http://127.0.0.1:${port}`);
-  console.log(`Clash Royale PS admin panel ready on http://127.0.0.1:${port}`);
+  logs.log("app", `Slash Royale Admin Panel ready on http://127.0.0.1:${port}`);
+  console.log(`Slash Royale Admin Panel ready on http://127.0.0.1:${port}`);
   setTimeout(() => {
     const royale = require("./lib/royale");
     royale.autoStart().catch((e) => logs.log("app", `auto-start failed: ${e.message}`));
