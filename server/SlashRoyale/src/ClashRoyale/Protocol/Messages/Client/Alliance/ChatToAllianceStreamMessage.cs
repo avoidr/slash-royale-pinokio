@@ -71,7 +71,20 @@ namespace ClashRoyale.Protocol.Messages.Client.Alliance
                                 {
                                     deck.Add(card);
 
-                                    for (var i = 0; i < 12; i++) deck.UpgradeCard(card.ClassId, card.InstanceId, true);
+                                    var deckCard = deck.GetCard(card.ClassId, card.InstanceId);
+                                    if (deckCard == null) continue;
+
+                                    var data = deckCard.GetRarityData;
+                                    if (data == null) continue;
+
+                                    // Cap comes from the rarity's LevelCount (the same source the
+                                    // panel's max-all button uses), so adding a new level to
+                                    // rarities.csv is respected automatically instead of a hardcoded
+                                    // 12. The bounded loop always terminates even if UpgradeCard
+                                    // stops at its own material-count cap.
+                                    var target = data.LevelCount - 1;
+                                    for (var i = deckCard.Level; i < target; i++)
+                                        deck.UpgradeCard(deckCard, true);
                                 }
 
                                 await new ServerErrorMessage(Device)
