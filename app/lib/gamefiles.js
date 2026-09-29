@@ -40,12 +40,30 @@ function csvList(sub = "csv_logic") {
     .map((f) => ({ file: `${sub}/${f}`, name: f.replace(/\.csv$/i, "") }));
 }
 
-// csv_logic + csv_client lists, with excluded files split into their own group.
+// Card-data CSVs are a display-only subset of csv_logic (characters, spells,
+// etc.). They are grouped into their own category in the file selector purely
+// for sorting purposes; the file paths remain csv_logic/*.
+const CARD_DATA = new Set([
+  "area_effect_objects",
+  "buildings",
+  "character_buffs",
+  "characters",
+  "projectiles",
+  "rarities",
+  "spells_buildings",
+  "spells_characters",
+  "spells_other",
+]);
+
+// csv_logic (split into card data + game data) and csv_client lists, with
+// excluded files split into their own group.
 function csvGroups() {
-  const groups = { csv_logic: [], csv_client: [], csv_excluded: [] };
+  const groups = { csv_card: [], csv_logic: [], csv_client: [], csv_excluded: [] };
   for (const sub of ["csv_logic", "csv_client"]) {
     for (const item of csvList(sub)) {
+      const name = item.name;
       if (isExcludedFile(item.file)) groups.csv_excluded.push(item);
+      else if (sub === "csv_logic" && CARD_DATA.has(name)) groups.csv_card.push(item);
       else groups[sub].push(item);
     }
   }

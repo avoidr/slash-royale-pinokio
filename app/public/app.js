@@ -227,6 +227,7 @@ async function loadFileList() {
   const j = await getJSON("/api/gamefiles");
   $("cfiles").innerHTML = "";
   const groups = [
+    ["csv_card", "Card data (csv_logic)"],
     ["csv_logic", "Game data (csv_logic)"],
     ["csv_client", "Client data (csv_client)"],
     ["csv_excluded", "Excluded files"],
