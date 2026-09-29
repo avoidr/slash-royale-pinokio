@@ -219,13 +219,15 @@ $("btn-public-ip").addEventListener("click", async () => {
 });
 
 /* ---------------- csv tab ---------------- */
+const csvState = { last: null };
+
 async function loadFileList() {
   const j = await getJSON("/api/gamefiles");
   $("cfiles").innerHTML = "";
   const groups = [
     ["csv_logic", "Game data (csv_logic)"],
     ["csv_client", "Client data (csv_client)"],
-    ["csv_ignored", "Ignored files"],
+    ["csv_excluded", "Excluded files"],
   ];
   for (const [key, label] of groups) {
     const list = j[key] || [];
@@ -236,27 +238,63 @@ async function loadFileList() {
       const opt = document.createElement("option");
       opt.value = f.file;
       opt.textContent = f.name;
+      if (key === "csv_excluded") {
+        opt.classList.add("opt-excluded");
+        opt.title = "Excluded — view-only, never baked into the client APK. Unexclude to edit.";
+      }
       g.appendChild(opt);
     }
     $("cfiles").appendChild(g);
   }
-  if (j.csv_logic.some((f) => f.file === "csv_logic/characters.csv")) {
-    $("cfiles").value = "csv_logic/characters.csv";
+  // keep the previously selected file when available; else default to characters
+  const target = (csvState.last && [...$("cfiles").options].some((o) => o.value === csvState.last))
+    ? csvState.last
+    : ["csv_logic/characters.csv", $("cfiles").value].find((v) => v && [...$("cfiles").options].some((o) => o.value === v));
+  $("cfiles").value = target || ($("cfiles").options[0] ? $("cfiles").options[0].value : "");
+  await loadCsv($("cfiles").value);
+}
+
+async function loadCsv(file) {
+  if (!file) return;
+  csvState.last = file;
+  try {
+    const j = await getJSON("/api/gamefiles/" + file);
+    state.csv = { file: j.file, headers: j.headers || [], types: j.types || [], data: j.data || [], excluded: !!j.excluded };
+    renderCsv();
+  } catch (e) {
+    alert(e.message);
   }
 }
+
+$("cfiles").addEventListener("change", () => loadCsv($("cfiles").value));
 
 function updateCsvMeta() {
   const c = state.csv;
   if (!c) return;
   let t = `${c.file} — ${c.headers.length} columns, ${c.data.length} rows`;
+  if (c.excluded) t += " · EXCLUDED (view-only)";
   if (typeof c.sel === "number" && c.sel >= 0 && c.sel < c.data.length) {
     t += ` · editing row ${c.sel + 1} of ${c.data.length}`;
   }
   $("csv-meta").textContent = t;
 }
 
+function updateCsvExcludeBtn() {
+  const c = state.csv;
+  const btn = $("btn-exclude");
+  if (!btn) return;
+  const excluded = !!(c && c.excluded);
+  btn.textContent = excluded ? "Unexclude" : "Exclude";
+  btn.classList.toggle("danger", !excluded);
+  btn.disabled = !c;
+  btn.title = excluded
+    ? "Make this file editable and bakeable into the client APK"
+    : "Make this file view-only and stop baking it into the client APK";
+}
+
 function selectCsvRow(ri) {
   if (!state.csv) return;
+  if (state.csv.excluded) return;
   state.csv.sel = ri;
   const rows = $("cvtable").querySelectorAll("tbody tr");
   for (const r of rows) {
@@ -268,17 +306,21 @@ function selectCsvRow(ri) {
 
 function updateCsvRowActions() {
   const c = state.csv;
-  const hasSel = !!(c && Number.isInteger(c.sel) && c.sel >= 0 && c.sel < c.data.length);
+  const ro = !!(c && c.excluded);
+  const hasSel = !ro && !!(c && Number.isInteger(c.sel) && c.sel >= 0 && c.sel < c.data.length);
   $("btn-csv-clone").disabled = !hasSel;
   $("btn-csv-delete").disabled = !hasSel;
+  $("btn-save").disabled = ro;
 }
 
 function renderCsv() {
   const c = state.csv;
   if (!c) return;
   updateCsvMeta();
+  updateCsvExcludeBtn();
   const thead = $("cvtable").querySelector("thead");
   const tbody = $("cvtable").querySelector("tbody");
+  const ro = c.excluded;
   thead.innerHTML = "";
   const tr = document.createElement("tr");
   for (const h of c.headers) {
@@ -292,19 +334,24 @@ function renderCsv() {
     const row = c.data[ri];
     const r = document.createElement("tr");
     r.setAttribute("data-r", ri);
+    if (ro) r.classList.add("ro");
     for (let ci = 0; ci < c.headers.length; ci++) {
       const v = row[ci];
       const td = document.createElement("td");
       td.textContent = v == null ? "" : String(v);
-      td.setAttribute("contenteditable", "true");
-      td.addEventListener("input", () => (row[ci] = td.textContent === "" ? "" : td.textContent));
-      td.addEventListener("focus", () => selectCsvRow(ri));
+      if (ro) {
+        td.setAttribute("title", "Excluded — unexclude to edit");
+      } else {
+        td.setAttribute("contenteditable", "true");
+        td.addEventListener("input", () => (row[ci] = td.textContent === "" ? "" : td.textContent));
+        td.addEventListener("focus", () => selectCsvRow(ri));
+      }
       r.appendChild(td);
     }
     tbody.appendChild(r);
   }
   $("cfilter").value = "";
-  if (typeof c.sel === "number" && c.sel >= 0 && c.sel < c.data.length) {
+  if (!ro && typeof c.sel === "number" && c.sel >= 0 && c.sel < c.data.length) {
     const rows = tbody.children;
     if (rows[c.sel]) rows[c.sel].classList.add("sel");
   }
@@ -313,7 +360,7 @@ function renderCsv() {
 
 $("btn-csv-clone").addEventListener("click", () => {
   const c = state.csv;
-  if (!c || !Number.isInteger(c.sel) || c.sel < 0 || c.sel >= c.data.length) return;
+  if (!c || c.excluded || !Number.isInteger(c.sel) || c.sel < 0 || c.sel >= c.data.length) return;
   const clone = c.data[c.sel].slice();
   c.data.splice(c.sel + 1, 0, clone);
   c.sel = c.sel + 1;
@@ -322,19 +369,18 @@ $("btn-csv-clone").addEventListener("click", () => {
 
 $("btn-csv-delete").addEventListener("click", () => {
   const c = state.csv;
-  if (!c || !Number.isInteger(c.sel) || c.sel < 0 || c.sel >= c.data.length) return;
+  if (!c || c.excluded || !Number.isInteger(c.sel) || c.sel < 0 || c.sel >= c.data.length) return;
   c.data.splice(c.sel, 1);
   c.sel = c.data.length > 0 ? Math.min(c.sel, c.data.length - 1) : null;
   renderCsv();
 });
 
-$("btn-load").addEventListener("click", async () => {
-  const file = $("cfiles").value;
-  if (!file) return alert("Nothing selected.");
+$("btn-exclude").addEventListener("click", async () => {
+  const c = state.csv;
+  if (!c) return;
   try {
-    const j = await getJSON("/api/gamefiles/" + file);
-    state.csv = { file: j.file, headers: j.headers || [], types: j.types || [], data: j.data || [] };
-    renderCsv();
+    const j = await postJSON("/api/gamefiles/exclude", { file: c.file, excluded: !c.excluded });
+    await loadFileList(); // rebuilds select; loadFileList re-loads the current file
   } catch (e) {
     alert(e.message);
   }
@@ -349,6 +395,7 @@ $("cfilter").addEventListener("input", (e) => {
 
 $("btn-save").addEventListener("click", async () => {
   if (!state.csv) return;
+  if (state.csv.excluded) return alert(state.csv.file + " is excluded (view-only). Unexclude it before editing.");
   try {
     await postJSON("/api/gamefiles/" + state.csv.file, {
       headers: state.csv.headers,
@@ -368,7 +415,7 @@ $("btn-restore").addEventListener("click", async () => {
     alert("Pristine data restored.");
     if (state.csv) {
       const j = await getJSON("/api/gamefiles/" + state.csv.file);
-      state.csv = { file: j.file, headers: j.headers || [], types: j.types || [], data: j.data || [] };
+      state.csv = { file: j.file, headers: j.headers || [], types: j.types || [], data: j.data || [], excluded: !!j.excluded };
       renderCsv();
     }
   } catch (e) {

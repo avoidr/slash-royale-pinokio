@@ -129,6 +129,10 @@ input[readonly] { opacity: 0.8; font-style: italic; cursor: default; }
 .csv-actions .btn { padding: 6px 12px; }
 .csv-actions .muted { flex: 1; }
 
+.opt-excluded { color: var(--red); opacity: 0.65; }
+#cvtable tbody tr.ro td { color: var(--muted); background: #101724; }
+#cvtable tbody tr.ro:hover td { background: #101724; }
+
 .table-wrap { overflow: auto; max-height: 560px; border: 1px solid var(--line); border-radius: 8px; }
 table { border-collapse: collapse; width: 100%; font-size: 12px; }
 th, td { border: 1px solid var(--line); padding: 5px 7px; white-space: nowrap; text-align: left; }

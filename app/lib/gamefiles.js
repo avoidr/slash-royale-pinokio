@@ -4,14 +4,30 @@ const fs = require("fs");
 const path = require("path");
 const { p, exists } = require("./paths");
 const logs = require("./logs");
+const settings = require("./settings");
 
-// CSVs that must never be baked into the client APK. Files in this category
-// remain editable in the panel (and in the running server's data), but the
-// APK builder skips them, so the client keeps the retail entry.
-const IGNORED_FILES = new Set(["csv_client/billing_packages.csv"]);
+// Excluded CSVs are view-only in the editor and are never baked into the
+// client APK (the client keeps the retail entry). The default set lives in
+// settings.json; the API can include or exclude files at runtime.
+function excludedList() {
+  return (settings.get().gamefiles && settings.get().gamefiles.excluded) || [];
+}
 
-function isIgnoredFile(rel) {
-  return IGNORED_FILES.has(String(rel || "").replace(/\\/g, "/"));
+function isExcludedFile(rel) {
+  const norm = String(rel || "").replace(/\\/g, "/");
+  return excludedList().includes(norm);
+}
+
+function setExcluded(rel, excluded) {
+  const norm = String(rel || "").replace(/\\/g, "/");
+  const s = settings.get();
+  let list = (s.gamefiles && s.gamefiles.excluded) || [];
+  list = list.filter((f) => f !== norm);
+  if (excluded) list.push(norm);
+  list.sort();
+  s.gamefiles.excluded = list;
+  settings.save(s);
+  return { ok: true, file: norm, excluded };
 }
 
 function csvList(sub = "csv_logic") {
@@ -24,12 +40,12 @@ function csvList(sub = "csv_logic") {
     .map((f) => ({ file: `${sub}/${f}`, name: f.replace(/\.csv$/i, "") }));
 }
 
-// csv_logic + csv_client lists, with ignored files split into their own group.
+// csv_logic + csv_client lists, with excluded files split into their own group.
 function csvGroups() {
-  const groups = { csv_logic: [], csv_client: [], csv_ignored: [] };
+  const groups = { csv_logic: [], csv_client: [], csv_excluded: [] };
   for (const sub of ["csv_logic", "csv_client"]) {
     for (const item of csvList(sub)) {
-      if (isIgnoredFile(item.file)) groups.csv_ignored.push(item);
+      if (isExcludedFile(item.file)) groups.csv_excluded.push(item);
       else groups[sub].push(item);
     }
   }
@@ -102,10 +118,13 @@ function readCsv(rel) {
   const headers = rows.length > 0 ? rows[0] : [];
   const types = rows.length > 1 ? rows[1] : [];
   const data = rows.slice(2);
-  return { headers, types, rows, data };
+  return { headers, types, rows, data, excluded: isExcludedFile(rel) };
 }
 
 function writeCsv(rel, payload) {
+  if (isExcludedFile(rel)) {
+    throw new Error(`${rel} is excluded (view-only). Un-exclude it before editing.`);
+  }
   const { headers, types, data } = payload;
   if (!Array.isArray(headers) || !Array.isArray(types)) {
     throw new Error("Headers and type rows are required");
@@ -179,4 +198,4 @@ function pristineVsPublishDiff() {
   return diffFiles;
 }
 
-module.exports = { csvList, csvGroups, isIgnoredFile, readCsv, writeCsv, restoreAll, pristineVsPublishDiff, parseCsv, serializeCsv };
+module.exports = { csvList, csvGroups, isExcludedFile, setExcluded, readCsv, writeCsv, restoreAll, pristineVsPublishDiff, parseCsv, serializeCsv };

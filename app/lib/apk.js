@@ -544,7 +544,7 @@ async function bakeGamefiles(stage) {
     for (const f of fs.readdirSync(srvDir)) {
       if (!f.toLowerCase().endsWith(".csv")) continue;
       const rel = `${set.srv}/${f}`;
-      if (gamefiles.isIgnoredFile(rel)) continue;
+      if (gamefiles.isExcludedFile(rel)) continue;
       const apkFile = path.join(apkDir, f);
       if (!exists(apkFile)) continue;
       const clientText = client[f];

@@ -348,6 +348,13 @@ router.get("/gamefiles/diff", (req, res) => {
   res.json({ ok: true, changed });
 });
 
+router.post("/gamefiles/exclude", wrap(async (req) => {
+  const body = req.body || {};
+  const file = String(body.file || "");
+  if (!file) throw new Error("missing file");
+  return gamefiles.setExcluded(file, !!body.excluded);
+}));
+
 router.get("/gamefiles/:file(*)", wrap(async (req) => {
   const rel = req.params.file + (req.params.file.toLowerCase().endsWith(".csv") ? "" : ".csv");
   const data = gamefiles.readCsv(rel);
