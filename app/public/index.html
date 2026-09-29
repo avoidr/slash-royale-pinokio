@@ -165,11 +165,21 @@
   <!-- ============ APK BUILDER ============ -->
   <section id="tab-apk" class="panel">
     <div class="card">
-      <h2>Build patched APK</h2>
+      <div class="toolbar">
+        <h2>Build patched APK</h2>
+        <span class="spacer"></span>
+        <button id="btn-apk-meta" class="btn">Icon &amp; app name</button>
+      </div>
       <div class="frow">
         <label for="apk-address">Server address baked into the client</label>
         <input id="apk-address" type="text" readonly placeholder="set on the Config tab → Connect" maxlength="23">
         <span class="muted">Display only — edit it on the Config tab (Connect). The build uses that address as-is, no port.</span>
+      </div>
+      <div class="frow">
+        <span class="muted">Installed app:</span>
+        <img id="apk-meta-icon" class="meta-icon" alt="">
+        <span id="apk-meta-summary">…</span>
+        <span class="muted">— change the app name and icon with “Icon &amp; app name”.</span>
       </div>
       <div class="frow apk-summary">
         <span class="muted">The patcher always:</span>
@@ -251,6 +261,37 @@
     <div class="apk-dl-progress" id="apk-dl-progress" hidden>
       <div class="pbar"><div class="pbar-fill" id="apk-dl-fill"></div></div>
       <div class="muted" id="apk-dl-status"></div>
+    </div>
+  </div>
+</div>
+
+<div id="apk-meta-overlay" hidden>
+  <div class="apk-meta-card">
+    <div class="apk-meta-title">APK app icon &amp; name</div>
+    <div class="apk-meta-body">
+      These are the details Android shows for the installed app — the name under the
+      launcher icon and the icon itself. They are applied to the next APK you build.
+    </div>
+    <div class="frow">
+      <label for="meta-name">App name</label>
+      <input id="meta-name" type="text" maxlength="60" placeholder="SlashRoyale">
+      <span class="muted">shown under the launcher icon</span>
+    </div>
+    <div class="frow">
+      <span class="muted">Icon</span>
+      <button id="btn-meta-choose" class="btn">Choose image</button>
+      <input id="meta-icon-file" type="file" accept="image/png" hidden>
+      <span class="muted" id="meta-icon-note">PNG, fit onto a square and resized for every density. Without one, the default Slash Royale icon is used.</span>
+    </div>
+    <div class="frow">
+      <span class="muted">Preview</span>
+      <img id="meta-preview" class="meta-icon" alt="">
+      <span class="muted" id="meta-preview-note"></span>
+    </div>
+    <div class="frow">
+      <button id="btn-meta-save" class="btn gold">Save</button>
+      <button id="btn-meta-restore" class="btn">Restore default</button>
+      <button id="btn-meta-cancel" class="btn">Cancel</button>
     </div>
   </div>
 </div>

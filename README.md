@@ -72,6 +72,7 @@ The **APK Builder** tab repackages the RetroRoyale base client at `app/assets/re
 
 - **Base client download** – if the APK file is missing, the builder shows a popup that downloads it for you (~90 MB).
 - **Patches the server address** into both 32-bit `libg.so` binaries (`cluster.retroroyale.xyz` is replaced; see the length note below), conditionally applies the battle checksum patch, and re-signs with a locally generated keystore (`app/data/keystore/release.jks`).
+- **Sets the installed app name & icon** – the name defaults to **SlashRoyale** and the launcher icon to the bundled `app/assets/slashroyale.png`; both are editable under **Icon & app name** in the APK Builder tab (**Choose image** uploads a custom PNG, **Restore default** resets both). They are applied to every build. The name is written into the `string/app_name` value in `resources.arsc` for all 6 locales, so it also sticks on non-English devices; `AndroidManifest.xml` is never touched. The icon is regenerated for every `res/drawable-*/ic_launcher.png` density. Settings persist in `app/data/settings.json`.
 - **Bakes your CSV edits** (`csv_logic` + `csv_client`) into the client: each genuine, schema-valid edit is decompressed, checked against the client's own copy (identical headers/type rows, column and row counts, no embedded newlines/NULs), then re-encoded and compressed into the client's SC/LZMA format inside the APK. Unchanged, stale, reduced or corrupt files (e.g. upstream's `skins.csv`, `globals.csv`) stay byte-for-byte untouched so a bad server file can never break the client at boot. Requires Python with the standard `lzma` module on `PATH`.
 - If a battle patch offset doesn't match the expected bytes it is skipped with a warning and the build still completes. The base APK is never written to.
 - The build output (e.g. `app/data/apk/clash-royale-<timestamp>.apk`) replaces any previous build.
@@ -128,6 +129,18 @@ curl -X POST http://127.0.0.1:3000/api/apk/build \
   -H "Content-Type: application/json" \
   -d '{"address":"127.0.0.1","patchAddress":true,"patchBattles":true,"bakeGamefiles":true}'
 
+# installed app name & icon (applied on the next build)
+curl http://127.0.0.1:3000/api/apk/meta
+curl -X POST http://127.0.0.1:3000/api/apk/meta \
+  -H "Content-Type: application/json" \
+  -d '{"appName":"SlashRoyale","icon":"default"}'
+# custom icon: upload a base64 PNG data URL (sets icon to "custom")
+curl -X POST http://127.0.0.1:3000/api/apk/icon \
+  -H "Content-Type: application/json" \
+  -d '{"dataUrl":"data:image/png;base64,<...>"}'
+# preview the icon the next build will use
+curl http://127.0.0.1:3000/api/apk/icon/preview --output icon.png
+
 # live logs (Server-Sent Events)
 curl -N http://127.0.0.1:3000/api/logs/all/stream
 ```
@@ -161,6 +174,10 @@ curl -N http://127.0.0.1:3000/api/logs/all/stream
 | GET/POST | `/api/config/main` | read / patch the main server's `config.json` (numeric knobs via `{config: {...}}`) |
 | POST | `/api/apk/build` | build patched APK (`address`, `patchAddress`, `patchBattles`, `bakeGamefiles`, `outputPath`) |
 | GET | `/api/apk/status` | base APK / keystore / JDK / last build info |
+| GET/POST | `/api/apk/meta` | read / set installed app name & icon (`{appName, icon:"default"\|"custom"}`) |
+| POST | `/api/apk/meta/restore` | reset the name to `SlashRoyale` and the icon to the default |
+| POST | `/api/apk/icon` | upload a custom launcher icon (base64 PNG data URL in `{dataUrl}`) |
+| GET | `/api/apk/icon/preview` | PNG of the icon the next build will use |
 | POST | `/api/apk/download` | start the base-client download (if missing) |
 | GET | `/api/apk/download/stream` | base-client download progress (SSE) |
 | GET | `/api/logs` | all buffered log lines per source |

@@ -5,7 +5,7 @@ const path = require("path");
 const https = require("https");
 const { p } = require("./paths");
 
-const VERSION = "0.1.1";
+const VERSION = "0.1.2";
 
 const API = "https://api.github.com/repos/avoidr/slash-royale-pinokio";
 

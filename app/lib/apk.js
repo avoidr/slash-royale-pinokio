@@ -10,6 +10,8 @@ const { p, exists } = require("./paths");
 const settings = require("./settings");
 const logs = require("./logs");
 const gamefiles = require("./gamefiles");
+const arsc = require("./arsc");
+const png = require("./png");
 const {
   execFile,
   indexOfBytes,
@@ -309,6 +311,127 @@ function patchLibg(stageRoot, address, patchBattles) {
   return report;
 }
 
+/* ------------------------------------------------------------------ *
+ * APK metadata: installed app name + app icon
+ *
+ * AndroidManifest.xml is never modified. The base client declares
+ * `android:label="@string/app_name"`, so repointing `string/app_name` inside
+ * resources.arsc renames the installed app while the manifest stays
+ * byte-identical to the original - it is parsed by Android's PackageParser at
+ * install time, so leaving it untouched avoids install failures entirely.
+ *
+ * `string/app_name` has one entry per locale (English, Japanese, Korean, two
+ * Chinese variants, ...), each holding a different string, so every one of
+ * them is repointed at the new name. Otherwise the rename would only stick on
+ * English devices.
+ *
+ * The pool is *grown*, never rewritten in place: the new name is appended as an
+ * additional string and the existing string data is shifted to stay aligned with
+ * the enlarged offset table. An earlier in-place version could only reuse the
+ * original 11-byte English slot, which is what forced the length cap; growing
+ * the pool removes that cap entirely. (A first attempt at growing advanced the
+ * string-data start without shifting the data, which silently corrupted all
+ * 9195 existing strings - hence the explicit shift in buildPoolWithString.)
+ *
+ * The launcher icon is `drawable/ic_launcher` → the per-density
+ * res/drawable-{ldpi..xxxhdpi}-v4/ic_launcher.png files, which get regenerated
+ * from the chosen source image (default slashroyale.png or a custom upload),
+ * fit onto a square and resized to each density.
+ * ------------------------------------------------------------------ */
+
+const ICON_DENSITIES = [
+  { bucket: "ldpi", side: 36 },
+  { bucket: "mdpi", side: 48 },
+  { bucket: "hdpi", side: 72 },
+  { bucket: "xhdpi", side: 96 },
+  { bucket: "xxhdpi", side: 144 },
+  { bucket: "xxxhdpi", side: 192 },
+];
+
+function iconSourcePath() {
+  const s = settings.get();
+  if (s.apk.icon === "custom" && exists(p.customIcon)) return p.customIcon;
+  return p.defaultIcon;
+}
+
+function validPng(buf) {
+  return (
+    buf &&
+    buf.length > 8 &&
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47 &&
+    buf[4] === 0x0d &&
+    buf[5] === 0x0a &&
+    buf[6] === 0x1a &&
+    buf[7] === 0x0a
+  );
+}
+
+function patchAppName(stage, appName) {
+  if (!appName) return null;
+  const file = path.join(stage, "resources.arsc");
+  if (!exists(file)) return { name: null, message: "resources.arsc not found in stage" };
+  const result = arsc.setAppName(fs.readFileSync(file), appName);
+  fs.writeFileSync(file, result.buffer);
+  return { name: appName, ok: true, configs: result.configs };
+}
+
+function patchIcons(stage, sourcePath) {
+  if (!sourcePath || !exists(sourcePath)) return { applied: false, message: `icon source not found: ${sourcePath}` };
+  const src = png.decode(fs.readFileSync(sourcePath));
+  const applied = [];
+  for (const d of ICON_DENSITIES) {
+    const out = path.join(stage, `res/drawable-${d.bucket}-v4/ic_launcher.png`);
+    if (!exists(out)) continue;
+    const sized = png.squareOfSize(src, d.side);
+    fs.writeFileSync(out, png.encode(sized));
+    applied.push(d.bucket);
+  }
+  return { applied: applied.length > 0, buckets: applied, source: path.basename(sourcePath) };
+}
+
+function metadata() {
+  const s = settings.get();
+  return {
+    appName: s.apk.appName || "SlashRoyale",
+    icon: s.apk.icon === "custom" ? "custom" : "default",
+    baseName: "RetroRoyale",
+    customIconPath: p.customIcon,
+    hasCustomIcon: exists(p.customIcon),
+    hasDefaultIcon: exists(p.defaultIcon),
+  };
+}
+
+function setMetadata(next = {}) {
+  const s = settings.get();
+  if (typeof next.appName === "string") {
+    const name = next.appName.trim();
+    if (!name) throw new Error("App name cannot be empty.");
+    if (name.length > 60) throw new Error("App name must be 60 characters or fewer.");
+    s.apk.appName = name;
+  }
+  if (next.icon === "custom" && !exists(p.customIcon)) {
+    throw new Error("No custom icon uploaded yet - pick a PNG first.");
+  }
+  if (next.icon === "custom" || next.icon === "default") {
+    s.apk.icon = next.icon;
+  }
+  settings.save(s);
+  return metadata();
+}
+
+// "Restore default" in the popup: back to the SlashRoyale name and the bundled
+// default icon, regardless of any custom icon that was uploaded.
+function restoreMetadataDefaults() {
+  const s = settings.get();
+  s.apk.appName = "SlashRoyale";
+  s.apk.icon = "default";
+  settings.save(s);
+  return metadata();
+}
+
 async function signApk(apkFile, keystore) {
   const meta = fs.readdirSync(path.dirname(apkFile));
   const pass = keystorePass();
@@ -583,6 +706,8 @@ async function build(opts = {}) {
   const patchBattles = opts.patchBattles !== undefined ? opts.patchBattles : true;
   const patchAddress = opts.patchAddress !== undefined ? opts.patchAddress : !!address;
   const bakeGamefilesOn = opts.bakeGamefiles !== undefined ? !!opts.bakeGamefiles : true;
+  // Name and icon are always applied - they are the SlashRoyale branding, not
+  // an opt-in tweak. The popup has no apply checkboxes; it only sets values.
   const outputPath = opts.outputPath || path.join(p.apkDir, `clash-royale-${Date.now()}.apk`);
 
   if (!exists(p.baseApk)) {
@@ -612,9 +737,21 @@ async function build(opts = {}) {
       logs.log("apk", `Client ABIs: ${abis.join(", ")}${has64 ? "" : " (32-bit only)"}`);
     }
 
-    const report = { address: null, battles: [], csv: null };
+    const report = { address: null, battles: [], csv: null, meta: null, icon: null };
     const patched = patchLibg(stage, patchAddress ? address : "", patchBattles);
     Object.assign(report, patched);
+
+    const meta = patchAppName(stage, s.apk.appName);
+    report.meta = meta;
+    if (meta && meta.name) {
+      logs.log("apk", `Set installed app name to "${meta.name}" (all ${meta.configs} locales).`);
+    } else if (meta && meta.message) logs.log("apk", `App name: ${meta.message}`);
+
+    const icon = patchIcons(stage, iconSourcePath());
+    report.icon = icon;
+    if (icon.applied) logs.log("apk", `Replaced launcher icon (${icon.buckets.join(", ")}).`);
+    else if (icon.skipped) logs.log("apk", "Icon patching disabled - keeping original launcher icon.");
+    else if (icon.message) logs.log("apk", `Icon: ${icon.message}`);
 
     if (bakeGamefilesOn) {
       const baked = await bakeGamefiles(stage);
@@ -677,6 +814,8 @@ async function status() {
         patchAddress: s.apk.patchAddress,
         patchBattles: s.apk.patchBattles,
         bakeGamefiles: s.apk.bakeGamefiles !== false,
+        appName: s.apk.appName,
+        icon: s.apk.icon,
       },
     },
     outputs: {
@@ -686,4 +825,4 @@ async function status() {
   };
 }
 
-module.exports = { build, status, ensureKeystore, signApk, startDownload, currentDownloadState, onDownload, offDownload, BASE_APK_URL };
+module.exports = { build, status, ensureKeystore, signApk, startDownload, currentDownloadState, onDownload, offDownload, metadata, setMetadata, restoreMetadataDefaults, validPng, patchIcons, patchAppName, BASE_APK_URL };

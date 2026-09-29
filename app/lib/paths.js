@@ -26,6 +26,8 @@ const p = {
   keystoreDir: path.join(APP, "data", "keystore"),
   keystoreFile: path.join(APP, "data", "keystore", "release.jks"),
   apkDir: path.join(APP, "data", "apk"),
+  customIcon: path.join(APP, "data", "apk", "custom-icon.png"),
+  defaultIcon: path.join(APP, "assets", "slashroyale.png"),
   assetsDir: path.join(APP, "assets"),
   baseApk: path.join(APP, "assets", "retroroyale.apk"),
 

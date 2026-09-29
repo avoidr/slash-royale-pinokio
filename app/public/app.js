@@ -918,6 +918,10 @@ async function loadApk() {
   if (j.settings && j.settings.serverAddress) $("apk-address").value = j.settings.serverAddress;
   if (j.abis && j.abis.length) $("apk-abis").textContent = j.abis.join(", ");
   if (j.building) $("btn-build").disabled = true;
+  try {
+    const m = await getJSON("/api/apk/meta");
+    renderMetaSummary(m);
+  } catch (e) {}
 }
 
 function setApkLog(line) {
@@ -939,6 +943,111 @@ $("btn-build").addEventListener("click", async () => {
     setApkLog("error: " + e.message);
   }
   $("btn-build").disabled = false;
+});
+
+/* ---- apk metadata (app icon & name) popup ---- */
+let metaPending = null; // FileReader data URL awaiting save
+
+function metaIconUrl() {
+  return "/api/apk/icon/preview?t=" + Date.now();
+}
+
+function renderMetaSummary(m) {
+  $("apk-meta-summary").textContent =
+    (m.appName || "SlashRoyale") + " - " + (m.icon === "custom" ? "custom icon" : "default icon");
+  $("apk-meta-icon").src = metaIconUrl();
+}
+
+function setMetaPreview(src) {
+  $("meta-preview").src = src;
+}
+
+async function openMeta() {
+  $("apk-meta-overlay").hidden = false;
+  metaPending = null;
+  try {
+    const m = await getJSON("/api/apk/meta");
+    $("meta-name").value = m.appName || "SlashRoyale";
+    $("meta-icon-note").textContent =
+      m.icon === "custom"
+        ? "Custom icon selected."
+        : "PNG, fit onto a square and resized for every density. Without one, the default Slash Royale icon is used.";
+    setMetaPreview(metaIconUrl());
+    $("meta-preview-note").textContent = m.icon === "custom" ? "current custom icon" : "default icon";
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+function closeMeta() {
+  $("apk-meta-overlay").hidden = true;
+  metaPending = null;
+}
+
+$("btn-apk-meta").addEventListener("click", openMeta);
+$("btn-meta-cancel").addEventListener("click", closeMeta);
+$("apk-meta-overlay").addEventListener("click", (ev) => {
+  if (ev.target === ev.currentTarget) closeMeta();
+});
+
+$("btn-meta-choose").addEventListener("click", () => $("meta-icon-file").click());
+
+$("meta-icon-file").addEventListener("change", (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    metaPending = reader.result;
+    $("meta-icon-note").textContent = "Selected: " + file.name + " (save to apply)";
+    $("meta-preview-note").textContent = "selected image";
+    setMetaPreview(metaPending);
+  };
+  reader.readAsDataURL(file);
+});
+
+$("btn-meta-restore").addEventListener("click", async () => {
+  const btn = $("btn-meta-restore");
+  btn.disabled = true;
+  try {
+    const m = await postJSON("/api/apk/meta/restore", {});
+    metaPending = null;
+    $("meta-name").value = m.appName || "SlashRoyale";
+    $("meta-icon-file").value = "";
+    $("meta-icon-note").textContent =
+      "PNG, fit onto a square and resized for every density. Without one, the default Slash Royale icon is used.";
+    $("meta-preview-note").textContent = "default icon";
+    setMetaPreview(metaIconUrl());
+    renderMetaSummary(m);
+    toast("Restored defaults. Name is \"" + (m.appName || "SlashRoyale") + "\" with the default icon.");
+  } catch (e) {
+    toast(e.message);
+  }
+  btn.disabled = false;
+});
+
+$("btn-meta-save").addEventListener("click", async () => {
+  const btn = $("btn-meta-save");
+  btn.disabled = true;
+  try {
+    const name = $("meta-name").value.trim();
+    if (!name) {
+      toast("App name cannot be empty.");
+      btn.disabled = false;
+      return;
+    }
+    if (metaPending) {
+      await postJSON("/api/apk/icon", { dataUrl: metaPending });
+    }
+    const m = await postJSON("/api/apk/meta", { appName: name });
+    metaPending = null;
+    renderMetaSummary(m);
+    closeMeta();
+    toast("Saved. The next build will be named \"" + (m.appName || "SlashRoyale") + "\" with the " +
+      (m.icon === "custom" ? "chosen icon." : "default icon."));
+  } catch (e) {
+    toast(e.message);
+  }
+  btn.disabled = false;
 });
 
 /* ---------------- config tab ---------------- */

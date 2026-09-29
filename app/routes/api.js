@@ -1,6 +1,8 @@
 "use strict";
 
 const https = require("https");
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const { p } = require("../lib/paths");
 const settings = require("../lib/settings");
@@ -385,6 +387,45 @@ router.post("/apk/build", wrap(async (req) => {
 }));
 
 router.get("/apk/status", wrap(async () => ({ ok: true, ...(await apk.status()) })));
+
+router.get("/apk/meta", wrap(async () => ({ ok: true, ...apk.metadata() })));
+
+router.post("/apk/meta", wrap(async (req) => {
+  const body = req.body || {};
+  return { ok: true, ...apk.setMetadata(body) };
+}));
+
+router.post("/apk/meta/restore", wrap(async () => {
+  return { ok: true, ...apk.restoreMetadataDefaults() };
+}));
+
+router.post("/apk/icon", wrap(async (req) => {
+  const body = req.body || {};
+  const dataUrl = typeof body.dataUrl === "string" ? body.dataUrl.trim() : "";
+  if (!dataUrl) throw new Error("no icon data provided");
+  const m = dataUrl.match(/^data:image\/png;base64,(.+)$/);
+  if (!m) throw new Error("icon must be a base64 PNG data URL");
+  const buf = Buffer.from(m[1], "base64");
+  if (!apk.validPng(buf)) throw new Error("uploaded file is not a valid PNG");
+  fs.mkdirSync(path.dirname(p.customIcon), { recursive: true });
+  fs.writeFileSync(p.customIcon, buf);
+  const s = settings.get();
+  s.apk.icon = "custom";
+  settings.save(s);
+  return { ok: true, ...apk.metadata() };
+}));
+
+// Serve the icon that the next build will use, so the metadata popup can show
+// a live preview. Cache-busted by the settings timestamp.
+router.get("/apk/icon/preview", (req, res) => {
+  const meta = apk.metadata();
+  const file = meta.icon === "custom" && meta.hasCustomIcon ? p.customIcon : p.defaultIcon;
+  if (!fs.existsSync(file)) return res.status(404).end();
+  const buf = fs.readFileSync(file);
+  res.setHeader("Content-Type", "image/png");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(buf);
+});
 
 router.post("/apk/download", wrap(async () => {
   apk.startDownload();
