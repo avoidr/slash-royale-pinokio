@@ -12,7 +12,7 @@ namespace ClashRoyale
         {
             Console.Title = "SlashRoyale";
 
-            Console.WriteLine("\r\n   _____ __           __    ____                    __\r\n  / ___// /___ ______/ /_  / __ \\____  __  ______ _/ /__\r\n  \\__ \\/ / __ `/ ___/ __ \\/ /_/ / __ \\/ / / / __ `/ / _ \\\r\n ___/ / / /_/ (__  ) / / / _, _/ /_/ / /_/ / /_/ / /  __/\r\n/____/_/\\__,_/____/_/ /_/_/ |_|\\____/\\__, /\\__,_/_/\\___/\r\n                                    /____/   by avoidr\r\n");
+            Console.WriteLine("\r\n   _____ __           __    ____                    __\r\n  / ___// /___ ______/ /_  / __ \\____  __  ______ _/ /__\r\n  \\__ \\/ / __ `/ ___/ __ \\/ /_/ / __ \\/ / / / __ `/ / _ \\\r\n ___/ / / /_/ (__  ) / / / _, _/ /_/ / /_/ / /_/ / /  __/\r\n/____/_/\\__,_/____/_/ /_/_/ |_|\\____/\\__, /\\__,_/_/\\___/\r\nfor Clash Royale 1.9.2              /____/   by avoidr\r\n");
             Console.WriteLine("Based on HashRoyale by Hashmane");
             Console.WriteLine("Credits to Hashmane (HashRoyale) & Zordon1337 (ZrdRoyale)");
             Resources.Initialize();
