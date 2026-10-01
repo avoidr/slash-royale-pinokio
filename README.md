@@ -2,8 +2,6 @@
 
 Clash Royale **1.9.2** private server based on [HashRoyale](https://github.com/Hashmane/HashRoyale) (itself a fork of ZrdRoyale), running on C#/.NET 8 with MariaDB, packaged with a web admin panel and a Pinokio launcher.
 
-This is the **legacy** line, kept for the 1.9.2 client. For the Clash Royale 2.1.8 client, use the separate **Slash Royale** app, which runs the AstralRoyale (Node.js + MongoDB) server instead.
-
 Install it from Pinokio, and the panel gives you an all-in-one way to run and manage your server:
 
 - one-click start for the whole stack (MariaDB + main game server + battle server) with live logs

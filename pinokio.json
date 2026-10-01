@@ -1,5 +1,5 @@
 {
   "title": "Slash Royale Legacy",
-  "description": "Clash Royale 1.9.2 private server (C#/.NET 8, based on HashRoyale) with a web admin panel: one-click start for MariaDB + game servers, live logs, a CSV editor for game data, and an APK builder that patches the bundled RetroRoyale base client to point at your server and re-signs it. Runs on Windows, macOS, and Linux. Legacy branch - for the 2.1.8 client see the separate Slash Royale app.",
+  "description": "Clash Royale 1.9.2 private server (C#/.NET 8, based on HashRoyale) with a web admin panel: one-click start for MariaDB + game servers, live logs, a CSV editor for game data, and an APK builder that patches the bundled RetroRoyale base client to point at your server and re-signs it. Runs on Windows, macOS, and Linux.",
   "icon": "icon.png"
 }
