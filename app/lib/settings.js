@@ -22,7 +22,7 @@ const DEFAULTS = {
     lastOutput: "",
     lastBuild: null,
     appName: "SlashRoyale",
-    icon: "default", // "default" (app/assets/slashroyale.png) | "custom"
+    icon: "default", // "default" (app/assets/slashroyalelegacy.png) | "custom"
     // Name and icon are always applied on build - they are the SlashRoyale
     // branding, not an opt-in tweak, so there are no apply toggles. The popup
     // only edits these two values ("Restore default" resets them).

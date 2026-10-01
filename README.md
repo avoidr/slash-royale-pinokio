@@ -1,6 +1,8 @@
-# SlashRoyale
+# Slash Royale Legacy
 
-Self-hosted Clash Royale private server based on [HashRoyale](https://github.com/Hashmane/HashRoyale) (itself a fork of ZrdRoyale), packaged with a web admin panel and a Pinokio launcher.
+Clash Royale **1.9.2** private server based on [HashRoyale](https://github.com/Hashmane/HashRoyale) (itself a fork of ZrdRoyale), running on C#/.NET 8 with MariaDB, packaged with a web admin panel and a Pinokio launcher.
+
+This is the **legacy** line, kept for the 1.9.2 client. For the Clash Royale 2.1.8 client, use the separate **Slash Royale** app, which runs the AstralRoyale (Node.js + MongoDB) server instead.
 
 Install it from Pinokio, and the panel gives you an all-in-one way to run and manage your server:
 
@@ -72,7 +74,7 @@ The **APK Builder** tab repackages the RetroRoyale base client at `app/assets/re
 
 - **Base client download** – if the APK file is missing, the builder shows a popup that downloads it for you (~90 MB).
 - **Patches the server address** into both 32-bit `libg.so` binaries (`cluster.retroroyale.xyz` is replaced; see the length note below), conditionally applies the battle checksum patch, and re-signs with a locally generated keystore (`app/data/keystore/release.jks`).
-- **Sets the installed app name & icon** – the name defaults to **SlashRoyale** and the launcher icon to the bundled `app/assets/slashroyale.png`; both are editable under **Icon & app name** in the APK Builder tab (**Choose image** uploads a custom PNG, **Restore default** resets both). They are applied to every build. The name is written into the `string/app_name` value in `resources.arsc` for all 6 locales, so it also sticks on non-English devices; `AndroidManifest.xml` is never touched. The icon is regenerated for every `res/drawable-*/ic_launcher.png` density. Settings persist in `app/data/settings.json`.
+- **Sets the installed app name & icon** – the name defaults to **SlashRoyale** and the launcher icon to the bundled `app/assets/slashroyalelegacy.png`; both are editable under **Icon & app name** in the APK Builder tab (**Choose image** uploads a custom PNG, **Restore default** resets both). They are applied to every build. The name is written into the `string/app_name` value in `resources.arsc` for all 6 locales, so it also sticks on non-English devices; `AndroidManifest.xml` is never touched. The icon is regenerated for every `res/drawable-*/ic_launcher.png` density. Settings persist in `app/data/settings.json`.
 - **Bakes your CSV edits** (`csv_logic` + `csv_client`) into the client: each genuine, schema-valid edit is decompressed, checked against the client's own copy (identical headers/type rows, column and row counts, no embedded newlines/NULs), then re-encoded and compressed into the client's SC/LZMA format inside the APK. Unchanged, stale, reduced or corrupt files (e.g. upstream's `skins.csv`, `globals.csv`) stay byte-for-byte untouched so a bad server file can never break the client at boot. Requires Python with the standard `lzma` module on `PATH`.
 - If a battle patch offset doesn't match the expected bytes it is skipped with a warning and the build still completes. The base APK is never written to.
 - The build output (e.g. `app/data/apk/clash-royale-<timestamp>.apk`) replaces any previous build.

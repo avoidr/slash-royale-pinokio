@@ -335,7 +335,7 @@ function patchLibg(stageRoot, address, patchBattles) {
  *
  * The launcher icon is `drawable/ic_launcher` → the per-density
  * res/drawable-{ldpi..xxxhdpi}-v4/ic_launcher.png files, which get regenerated
- * from the chosen source image (default slashroyale.png or a custom upload),
+ * from the chosen source image (default slashroyalelegacy.png or a custom upload),
  * fit onto a square and resized to each density.
  * ------------------------------------------------------------------ */
 

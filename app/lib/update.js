@@ -5,9 +5,9 @@ const path = require("path");
 const https = require("https");
 const { p } = require("./paths");
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
-const API = "https://api.github.com/repos/avoidr/slash-royale-pinokio";
+const API = "https://api.github.com/repos/avoidr/SlashRoyaleLegacy";
 
 const defaultBranch = "main";
 const commitCache = { data: null, at: 0 };
@@ -57,7 +57,7 @@ function localHead() {
   }
 }
 
-function httpGet(url, timeoutMs = 15000) {
+function httpGet(url, timeoutMs = 15000, redirects = 5) {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
@@ -69,6 +69,19 @@ function httpGet(url, timeoutMs = 15000) {
         },
       },
       (res) => {
+        // GitHub answers 301 for a renamed repo and keeps that redirect forever,
+        // so follow it instead of treating it as a failure. Without this, an
+        // install whose API constant still names the old repo breaks the moment
+        // the repo is renamed.
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          res.resume();
+          if (redirects <= 0) {
+            return reject(new Error("too many redirects from GitHub"));
+          }
+          const next = new URL(res.headers.location, url).toString();
+          return resolve(httpGet(next, timeoutMs, redirects - 1));
+        }
+
         let body = "";
         res.setEncoding("utf8");
         res.on("data", (c) => {
